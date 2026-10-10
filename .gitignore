@@ -36,3 +36,6 @@ lerna-debug.log*
 Thumbs.db
 .vscode/
 .idea/
+
+# Runtime version pin (hosting-provided, not tracked)
+.node-version

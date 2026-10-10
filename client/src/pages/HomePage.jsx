@@ -116,6 +116,9 @@ const HomePage = () => {
 
         <motion.div
           variants={containerVariants}
+          initial="hidden"
+          whileInView="visible"
+          viewport={{ once: true, amount: 0.2 }}
           className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3"
         >
           {featuredProducts.length > 0 ? (

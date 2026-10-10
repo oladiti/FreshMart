@@ -1,5 +1,7 @@
 // server.js
 import dotenv from 'dotenv';
+import path from 'path';
+import { fileURLToPath } from 'url';
 import mongoose from 'mongoose';
 import app from './app.js';
 import { backfillMissingSlugs, backfillMissingSkus, backfillMissingRecipeSlugs } from './backfill-slugs.js';
@@ -7,7 +9,10 @@ import Product from './models/Product.js';
 import Order from './models/Order.js';
 import { computeRecommendations } from './services/recommendations/computeRecommendations.js';
 
-dotenv.config();
+// Load server/.env relative to this file so `npm start` works from any cwd.
+// On Render env vars are already injected, and dotenv does not override them.
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
+dotenv.config({ path: path.resolve(__dirname, '.env') });
 
 // Connect DB & start server
 const PORT = process.env.PORT || 5000;
