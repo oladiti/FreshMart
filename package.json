@@ -5,7 +5,7 @@
   "type": "module",
   "description": "FreshMart - pipeline: Unit Testing → API Testing → UI/Regression Testing → Quality Gate → Results/Reports",
   "scripts": {
-    "build": "npm --prefix client ci && npm --prefix client run build && npm --prefix server ci",
+    "build": "npm --prefix client ci --include=dev && npm --prefix client run build && npm --prefix server ci",
     "start": "node server/server.js",
     "test:unit:server": "npm --prefix server run test:unit",
     "test:unit:client": "npm --prefix client run test:unit",
