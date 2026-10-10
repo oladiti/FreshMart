@@ -11,7 +11,7 @@ services:
       npm --prefix client run build &&
       npm --prefix server ci
     startCommand: node server/server.js
-    healthCheckPath: /
+    healthCheckPath: /api/health
     envVars:
       - key: NODE_VERSION
         value: "22"

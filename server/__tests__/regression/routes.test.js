@@ -10,8 +10,8 @@ describe('Route Regression — all API routes respond without crashing', () => {
   });
 
   describe('Health / root', () => {
-    it('GET / returns 200', async () => {
-      const res = await agent().get('/');
+    it('GET /api/health returns 200', async () => {
+      const res = await agent().get('/api/health');
       expect(res.status).toBe(200);
     });
   });

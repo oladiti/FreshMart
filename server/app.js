@@ -95,7 +95,7 @@ app.use('/api/newsletter', newsletterRoutes);
 app.use('/api/ai', aiRoutes);
 app.use('/api/recommendations', recommendationRoutes);
 
-app.get('/', (req, res) => res.send('API running'));
+app.get('/api/health', (req, res) => res.send('API running'));
 
 // SPA fallback: serve index.html for any non-API route (client-side routing).
 // Only in production so unknown routes still 404 in development/tests.
