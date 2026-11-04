@@ -3,6 +3,7 @@ import { Trash2, Search, RefreshCw, PackageOpen } from "lucide-react";
 import api from "../../utils/api";
 import AdminTable from "../../components/AdminTable";
 import { TableSkeleton } from "../../components/AdminSkeletons";
+import OrderPageNav from "../../components/OrderPageNav";
 
 const ORDER_STATUSES = ["pending", "paid", "shipped", "delivered", "cancelled"];
 
@@ -148,7 +149,12 @@ export default function AdminOrdersPage() {
           >
             {o.status}
           </span>
+          <label htmlFor={`order-status-${o._id}`} className="sr-only">
+            Update status for order {o._id}
+          </label>
           <select
+            id={`order-status-${o._id}`}
+            name="status"
             value={o.status}
             disabled={updatingId === o._id}
             onChange={(e) => updateStatus(o._id, e.target.value)}
@@ -188,6 +194,8 @@ export default function AdminOrdersPage() {
 
   return (
     <div>
+      <OrderPageNav />
+
       <div className="flex items-center justify-between flex-wrap gap-3 mb-6">
         <div>
           <h1 className="text-2xl md:text-3xl font-bold text-gray-900">
@@ -222,7 +230,12 @@ export default function AdminOrdersPage() {
       <div className="flex flex-col sm:flex-row gap-3 mb-5">
         <div className="relative flex-1">
           <Search className="w-4 h-4 text-gray-400 absolute left-3 top-1/2 -translate-y-1/2" />
+          <label htmlFor="order-search" className="sr-only">
+            Search orders
+          </label>
           <input
+            id="order-search"
+            name="search"
             type="text"
             value={search}
             onChange={(e) => setSearch(e.target.value)}
@@ -230,7 +243,12 @@ export default function AdminOrdersPage() {
             className="w-full pl-9 pr-3 py-2 rounded-lg border border-gray-300 text-sm focus:outline-none focus:ring-2 focus:ring-primary-400"
           />
         </div>
+        <label htmlFor="status-filter" className="sr-only">
+          Filter orders by status
+        </label>
         <select
+          id="status-filter"
+          name="statusFilter"
           value={statusFilter}
           onChange={(e) => setStatusFilter(e.target.value)}
           className="px-3 py-2 rounded-lg border border-gray-300 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-primary-400"

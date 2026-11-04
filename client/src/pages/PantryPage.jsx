@@ -5,6 +5,7 @@ import api from "../utils/api";
 import AddToCartButton from "../components/AddToCartButton";
 import Pagination from "../components/Pagination";
 import ProductGridSkeleton from "../components/ProductGridSkeleton";
+import SafeImage from "../components/SafeImage";
 
 const ITEMS_PER_PAGE = 20;
 
@@ -77,16 +78,9 @@ const PantryPage = () => {
                 className="border border-gray-100 rounded-lg shadow-sm hover:shadow-lg transition p-3 sm:p-4 bg-white flex flex-col card-hover"
               >
                 <Link to={`/products/${product.slug}`}>
-                  <img
-                    src={
-                      product.image ||
-                      "/images/placeholder.jpg"
-                    }
+                  <SafeImage
+                    src={product.image}
                     alt={product.name}
-                    loading="lazy"
-                    onError={(e) =>
-                      (e.target.src = "/images/placeholder.jpg")
-                    }
                     className="w-full h-32 object-cover rounded-md"
                   />
                 </Link>

@@ -1,5 +1,5 @@
 import mongoose from "mongoose";
-import Product from "../models/Product.js";
+import Product, { pickProductFields } from "../models/Product.js";
 
 /* ======================================================
    🛒 PRODUCT CONTROLLER
@@ -108,7 +108,7 @@ export const getProducts = async (req, res) => {
     const conditions = [];
 
     if (search) {
-      const rx = new RegExp(escapeRegex(search), "i");
+      const rx = new RegExp(escapeRegex(String(search).trim().slice(0, 64)), "i");
       conditions.push({
         $or: [
           { name: rx },
@@ -179,8 +179,12 @@ export const getProductsByCategory = async (req, res) => {
     const { category } = req.params;
     const { limit = 20 } = req.query;
 
+    // Escape user input before building a RegExp so a crafted value can't
+    // trigger catastrophic backtracking (ReDoS).
+    const safeCategory = escapeRegex(String(category).slice(0, 64));
+
     const products = await Product.find({
-      category: { $regex: new RegExp(category, "i") },
+      category: { $regex: new RegExp(safeCategory, "i") },
     })
       .select("name price image category isWeeklyDeal slug")
       .limit(parseInt(limit))
@@ -300,7 +304,7 @@ export const createProduct = async (req, res, next) => {
 // ✅ Update Product
 export const updateProduct = async (req, res, next) => {
   try {
-    const updates = req.body;
+    const updates = pickProductFields(req.body);
     const product = await Product.findById(req.params.id);
 
     if (!product) {

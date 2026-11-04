@@ -183,6 +183,7 @@ export default function Footer() {
               </label>
               <input
                 id="footer-newsletter-email"
+                name="email"
                 type="email"
                 required
                 value={email}

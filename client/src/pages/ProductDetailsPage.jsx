@@ -70,7 +70,6 @@ export default function ProductDetailsPage() {
   const { addToCart } = useContext(CartContext);
   const { user } = useContext(AuthContext);
   const [quantity, setQuantity] = useState(1);
-  const [addedToCart, setAddedToCart] = useState(false);
   const [activeImage, setActiveImage] = useState(null);
 
   //  Srcs whose pixels are decoded and cached. Drives the load-gated
@@ -164,8 +163,6 @@ export default function ProductDetailsPage() {
         },
         quantity
       );
-      setAddedToCart(true);
-      setTimeout(() => setAddedToCart(false), 2000);
     }
   };
 
@@ -441,6 +438,7 @@ export default function ProductDetailsPage() {
                 </label>
                 <input
                   id="quantity"
+                  name="quantity"
                   type="number"
                   min="1"
                   max={product.countInStock || 999}
@@ -464,11 +462,6 @@ export default function ProductDetailsPage() {
                 Add to Cart
               </button>
             </div>
-            {addedToCart && (
-              <p className="mt-3 text-success font-medium">
-                {quantity} × {name} added to cart ✓
-              </p>
-            )}
         </div>
       </div>
 
@@ -625,10 +618,12 @@ export default function ProductDetailsPage() {
                 {[1, 2, 3, 4, 5].map((value) => (
                   <label
                     key={value}
+                    htmlFor={`rating-${value}`}
                     className="cursor-pointer p-1 text-yellow-500"
                     title={`${value} star${value > 1 ? "s" : ""}`}
                   >
                     <input
+                      id={`rating-${value}`}
                       type="radio"
                       name="rating"
                       value={value}
@@ -660,6 +655,7 @@ export default function ProductDetailsPage() {
               </label>
               <textarea
                 id="review-comment"
+                name="comment"
                 rows={4}
                 value={comment}
                 maxLength={MAX_COMMENT_LENGTH}

@@ -133,6 +133,7 @@ describe('Order Model', () => {
         name: 'Apple',
         price: 2,
         image: '/images/apple.jpg',
+        category: 'Fruits',
       });
       const user = await User.create({
         name: 'Buyer',
@@ -145,6 +146,7 @@ describe('Order Model', () => {
       const order = await Order.createFromCart(cart, user._id, 'buyer2@test.com', validShipping);
       expect(order.items.length).toBe(1);
       expect(order.items[0].name).toBe('Apple');
+      expect(order.items[0].category).toBe('Fruits');
       expect(order.items[0].quantity).toBe(4);
       expect(order.total_amount).toBe(8);
       // autopopulate turns the user ref into an object

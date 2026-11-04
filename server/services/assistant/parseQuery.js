@@ -23,6 +23,8 @@ export const INTENTS = Object.freeze({
   RECIPE_INGREDIENTS: "recipe_ingredients",
   AVAILABILITY: "availability",
   BUNDLE: "bundle",
+  MY_CART: "my_cart",
+  MY_ORDERS: "my_orders",
   UNCLEAR: "unclear",
 });
 
@@ -110,6 +112,7 @@ const STOPWORDS = new Set([
   "hey", "make", "making", "cook", "prepare", "preparing", "bake", "baking",
   // filler nouns
   "product", "products", "item", "items", "thing", "things", "stuff",
+  "cart", "carts", "checkout",
   "something", "anything", "some", "any", "one", "ones", "many", "much",
   "more", "most", "several", "else", "now", "today", "currently",
   "week", "weeks",
@@ -281,6 +284,22 @@ const QUANTITY_RE =
 
 const BUNDLE_RE = /\b(?:bundles?)\b/;
 
+/** The shopper asking to see (not change) what is in their cart. */
+const MY_CART_RE =
+  /\b(?:my|the|this)\s+cart\b|\bcheck(?:\s+out)?\s+(?:my\s+)?cart\b|\bwhat(?:'s|\s+is)\s+in\s+my\s+cart\b|\bcart\s+(?:contents|summary|total)\b/;
+
+/**
+ * A cart *change* ("add milk to my cart", "clear my cart"). The degraded
+ * assistant cannot mutate the cart, so these must not be mistaken for a
+ * "show me my cart" request.
+ */
+const CART_MUTATION_RE =
+  /\b(?:add|put|place|remove|delete|clear|empty|update|change|increase|reduce|drop)\b[\s\S]*\bcart\b/;
+
+/** The shopper asking about their own orders. */
+const MY_ORDERS_RE =
+  /\b(?:my|last|recent|previous|past)\s+orders?\b|\btrack(?:ing)?\s+(?:my\s+)?(?:last\s+|recent\s+|previous\s+)?orders?\b|\border\s+(?:status|history)\b|\bwhere(?:'s|\s+is)\s+my\s+order\b/;
+
 const CUE_RE =
   /\b(?:show|find|search|look|looking|i\s+want|get|give|which|what|where|how|need|buy)\b/;
 
@@ -404,6 +423,8 @@ export function parseQuery(text) {
   const isRecipe = RECIPE_RE.test(src);
   const isCheap = CHEAP_RE.test(src);
   const isExpensive = EXPENSIVE_RE.test(src);
+  const isCart = MY_CART_RE.test(src) && !CART_MUTATION_RE.test(src);
+  const isOrders = MY_ORDERS_RE.test(src);
 
   if (eventPart || peoplePart) {
     slots.occasion = [eventPart, peoplePart].filter(Boolean).join(" ");
@@ -424,10 +445,16 @@ export function parseQuery(text) {
     slots.minPrice !== null ||
     slots.maxPrice !== null ||
     slots.budget !== null ||
-    slots.occasion !== null;
+    slots.occasion !== null ||
+    isCart ||
+    isOrders;
 
   let intent;
-  if (isAvailability || isSoldOut) {
+  if (isCart) {
+    intent = INTENTS.MY_CART;
+  } else if (isOrders) {
+    intent = INTENTS.MY_ORDERS;
+  } else if (isAvailability || isSoldOut) {
     intent = INTENTS.AVAILABILITY;
   } else if (isBudget) {
     intent = INTENTS.BUDGET_BASKET;

@@ -7,25 +7,14 @@ import React, {
   useContext,
   useMemo,
 } from "react";
-import { AnimatePresence, motion } from "framer-motion";
 import { AuthContext } from "./AuthContext";
+import { useNotifications } from "./NotificationContext";
 
 export const CartContext = createContext();
 
 export const CartProvider = ({ children }) => {
   const { user, loading } = useContext(AuthContext) || {};
-
-  const [toast, setToast] = useState(null);
-
-  const showToast = useCallback((message, type = "success") => {
-    setToast({ id: Date.now(), message, type });
-  }, []);
-
-  useEffect(() => {
-    if (!toast) return;
-    const timer = setTimeout(() => setToast(null), 2500);
-    return () => clearTimeout(timer);
-  }, [toast]);
+  const { notify } = useNotifications();
 
   //  Determine the cart storage key once the auth state is known so we never
   //  accidentally read/write the guest key while a logged-in user's account
@@ -71,7 +60,7 @@ export const CartProvider = ({ children }) => {
 
     if (!id || toAdd === 0) return;
 
-    showToast(`${product.name} added to cart`);
+    notify(`${product.name || "Item"} added to cart`);
 
     setCart((prevCart) => {
       const normalizedProduct = {
@@ -105,7 +94,7 @@ export const CartProvider = ({ children }) => {
 
       return prevCart;
     });
-  }, [showToast]);
+  }, [notify]);
 
   //  Set an item's quantity to an absolute value (0 removes the item)
   const updateQuantity = useCallback((productId, newQuantity) => {
@@ -121,9 +110,13 @@ export const CartProvider = ({ children }) => {
   }, []);
 
   //  Remove a product completely
-  const removeFromCart = useCallback((productId) => {
-    setCart((prevCart) => prevCart.filter((item) => item.id !== productId));
-  }, []);
+  const removeFromCart = useCallback(
+    (productId, name) => {
+      setCart((prevCart) => prevCart.filter((item) => item.id !== productId));
+      notify(name ? `${name} removed from cart` : "Item removed from cart");
+    },
+    [notify]
+  );
 
   //  Replace the whole cart (used to mirror the server-side AI cart into the
   //  visible cart so both stay in sync).
@@ -170,54 +163,10 @@ export const CartProvider = ({ children }) => {
         clearCart,
         totalItems,
         totalAmount,
-        showToast,
       }}
     >
       {children}
-      <Toast toast={toast} onClose={() => setToast(null)} />
     </CartContext.Provider>
   );
 };
 
-function Toast({ toast, onClose }) {
-  return (
-    <AnimatePresence>
-      {toast && (
-        <div className="pointer-events-none fixed inset-x-0 bottom-6 z-[100] flex justify-center px-4">
-          <motion.div
-            key={toast.id}
-            initial={{ opacity: 0, y: 40, scale: 0.95 }}
-            animate={{ opacity: 1, y: 0, scale: 1 }}
-            exit={{ opacity: 0, y: 20, scale: 0.95 }}
-            transition={{ type: "spring", stiffness: 300, damping: 24 }}
-            onClick={onClose}
-            className={`pointer-events-auto flex w-full max-w-md cursor-pointer items-center gap-2 rounded-full px-4 py-2.5 font-medium text-white shadow-2xl sm:gap-3 sm:px-5 sm:py-3 ${
-              toast.type === "error"
-                ? "bg-red-600"
-                : "bg-success"
-            }`}
-            role="status"
-            aria-live="polite"
-          >
-            <span className="shrink-0 text-lg leading-none">
-              {toast.type === "error" ? "" : "Added"}
-            </span>
-            <span className="min-w-0 flex-1 break-words text-sm sm:text-base">
-              {toast.message}
-            </span>
-            <button
-              onClick={(e) => {
-                e.stopPropagation();
-                onClose();
-              }}
-              className="ml-1 shrink-0 text-sm text-white/80 hover:text-white sm:ml-2"
-              aria-label="Dismiss notification"
-            >
-              ✕
-            </button>
-          </motion.div>
-        </div>
-      )}
-    </AnimatePresence>
-  );
-}

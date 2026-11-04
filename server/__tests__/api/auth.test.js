@@ -3,6 +3,7 @@ import {
   teardownApiTest,
   agent,
   generateToken,
+  seedUsers,
   regularUser,
   adminUser,
   getUserDoc,
@@ -11,6 +12,7 @@ import {
 describe('Auth API', () => {
   beforeAll(async () => {
     await setupApiTest();
+    await seedUsers();
   });
 
   afterAll(async () => {
@@ -18,14 +20,17 @@ describe('Auth API', () => {
   });
 
   describe('POST /api/auth/register', () => {
-    it('registers a new user and returns a token', async () => {
+    it('registers a new user and sets auth cookies', async () => {
       const res = await agent()
         .post('/api/auth/register')
-        .send({ name: 'New Person', email: 'newperson@test.com', password: 'password123' });
+        .send({ name: 'New Person', email: 'newperson@test.com', password: 'StrongPass123' });
       expect(res.status).toBe(201);
       expect(res.body._id).toBeTruthy();
       expect(res.body.email).toBe('newperson@test.com');
-      expect(res.body.token).toBeTruthy();
+      expect(res.body.token).toBeUndefined();
+      const cookies = res.headers['set-cookie'] || [];
+      expect(cookies.some((c) => c.startsWith('fm_at='))).toBe(true);
+      expect(cookies.some((c) => c.startsWith('fm_rt='))).toBe(true);
       expect(res.body.role).toBe('user');
     });
 
@@ -38,7 +43,7 @@ describe('Auth API', () => {
       const res = await agent().post('/api/auth/register').send({
         name: 'Duplicate',
         email: regularUser.email,
-        password: 'password123',
+        password: 'StrongPass123',
       });
       expect(res.status).toBe(400);
       expect(res.body.message).toContain('already exists');
@@ -58,7 +63,9 @@ describe('Auth API', () => {
       });
       expect(res.status).toBe(200);
       expect(res.body.email).toBe(regularUser.email);
-      expect(res.body.token).toBeTruthy();
+      expect(res.body.token).toBeUndefined();
+      const cookies = res.headers['set-cookie'] || [];
+      expect(cookies.some((c) => c.startsWith('fm_at='))).toBe(true);
     });
 
     it('returns 400 for a wrong password', async () => {
@@ -115,6 +122,68 @@ describe('Auth API', () => {
         .send({ name: 'Renamed User' });
       expect(res.status).toBe(200);
       expect(res.body.name).toBe('Renamed User');
+    });
+
+    it('saves a compressed avatar and returns it from the profile', async () => {
+      const user = await getUserDoc();
+      const token = generateToken(user._id, user.role);
+      const avatar = `data:image/jpeg;base64,${Buffer.from('avatar-bytes').toString('base64')}`;
+
+      const res = await agent()
+        .put('/api/auth/profile')
+        .set('Authorization', `Bearer ${token}`)
+        .send({ avatar });
+
+      expect(res.status).toBe(200);
+      expect(res.body.avatar).toBe(avatar);
+
+      const profile = await agent()
+        .get('/api/auth/profile')
+        .set('Authorization', `Bearer ${token}`);
+      expect(profile.status).toBe(200);
+      expect(profile.body.avatar).toBe(avatar);
+    });
+
+    it('clears an avatar with an empty string', async () => {
+      const user = await getUserDoc();
+      const token = generateToken(user._id, user.role);
+      const avatar = `data:image/png;base64,${Buffer.from('avatar-bytes').toString('base64')}`;
+
+      await agent()
+        .put('/api/auth/profile')
+        .set('Authorization', `Bearer ${token}`)
+        .send({ avatar });
+
+      const res = await agent()
+        .put('/api/auth/profile')
+        .set('Authorization', `Bearer ${token}`)
+        .send({ avatar: '' });
+
+      expect(res.status).toBe(200);
+      expect(res.body.avatar).toBe('');
+    });
+
+    it('rejects malformed avatar data', async () => {
+      const user = await getUserDoc();
+      const token = generateToken(user._id, user.role);
+      const res = await agent()
+        .put('/api/auth/profile')
+        .set('Authorization', `Bearer ${token}`)
+        .send({ avatar: 'not-an-image' });
+
+      expect(res.status).toBe(400);
+    });
+
+    it('rejects avatars larger than the storage cap', async () => {
+      const user = await getUserDoc();
+      const token = generateToken(user._id, user.role);
+      const avatar = `data:image/jpeg;base64,${'A'.repeat(700001)}`;
+      const res = await agent()
+        .put('/api/auth/profile')
+        .set('Authorization', `Bearer ${token}`)
+        .send({ avatar });
+
+      expect(res.status).toBe(400);
     });
 
     it('returns 401 without a token', async () => {

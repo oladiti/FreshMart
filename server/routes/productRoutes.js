@@ -14,6 +14,7 @@ import {
   createReview
 } from '../controllers/productController.js';
 import { protect, adminOnly } from '../middleware/authMiddleware.js';
+import { validateObjectId } from '../middleware/validateObjectId.js';
 import Product from '../models/Product.js';
 
 const router = express.Router();
@@ -60,7 +61,7 @@ router.get('/:slug', getProductBySlug);
 ========================== */
 
 // ✅ Submit a review (or edit your existing one)
-router.post('/:id/reviews', protect, createReview);
+router.post('/:id/reviews', protect, validateObjectId(), createReview);
 
 /* ==========================
    🔒 ADMIN ROUTES
@@ -70,15 +71,15 @@ router.post('/:id/reviews', protect, createReview);
 router.post('/', protect, adminOnly, createProduct);
 
 // ✅ UPDATE existing product
-router.put('/:id', protect, adminOnly, updateProduct);
+router.put('/:id', protect, adminOnly, validateObjectId(), updateProduct);
 
 // ✅ ADD related products
-router.patch('/:id/related', protect, adminOnly, addRelatedProducts);
+router.patch('/:id/related', protect, adminOnly, validateObjectId(), addRelatedProducts);
 
 // ✅ REMOVE related products
-router.delete('/:id/related', protect, adminOnly, removeRelatedProducts);
+router.delete('/:id/related', protect, adminOnly, validateObjectId(), removeRelatedProducts);
 
 // ✅ DELETE product
-router.delete('/:id', protect, adminOnly, deleteProduct);
+router.delete('/:id', protect, adminOnly, validateObjectId(), deleteProduct);
 
 export default router;

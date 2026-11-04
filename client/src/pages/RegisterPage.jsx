@@ -1,19 +1,21 @@
 import { useState, useContext } from "react";
-import { useNavigate, useLocation, Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { AuthContext } from "../context/AuthContext";
+import { useNotifications } from "../context/NotificationContext";
 import { ShoppingBag } from "lucide-react";
 import BackToHome from "../components/BackToHome";
+import { validatePassword, MIN_PASSWORD_LENGTH } from "../utils/passwordPolicy";
 
 export default function RegisterPage() {
   const { register } = useContext(AuthContext);
+  const { notify } = useNotifications();
+  const navigate = useNavigate();
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const [error, setError] = useState("");
   const [submitting, setSubmitting] = useState(false);
-  const navigate = useNavigate();
-  const location = useLocation();
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -23,8 +25,9 @@ export default function RegisterPage() {
       setError("Passwords do not match.");
       return;
     }
-    if (password.length < 6) {
-      setError("Password must be at least 6 characters.");
+    const passwordError = validatePassword(password);
+    if (passwordError) {
+      setError(passwordError);
       return;
     }
 
@@ -33,8 +36,8 @@ export default function RegisterPage() {
     setSubmitting(false);
 
     if (result.success) {
-      const from = location.state?.from?.pathname || "/";
-      navigate(from, { replace: true });
+      notify("Account created.");
+      navigate("/shop");
     } else {
       setError(result.message);
     }
@@ -61,10 +64,15 @@ export default function RegisterPage() {
 
           <form onSubmit={handleSubmit} className="space-y-4">
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
+              <label
+                htmlFor="name"
+                className="block text-sm font-medium text-gray-700 mb-1"
+              >
                 Full Name
               </label>
               <input
+                id="name"
+                name="name"
                 type="text"
                 placeholder="John Doe"
                 value={name}
@@ -74,10 +82,15 @@ export default function RegisterPage() {
               />
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
+              <label
+                htmlFor="email"
+                className="block text-sm font-medium text-gray-700 mb-1"
+              >
                 Email
               </label>
               <input
+                id="email"
+                name="email"
                 type="email"
                 placeholder="you@example.com"
                 value={email}
@@ -87,12 +100,17 @@ export default function RegisterPage() {
               />
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
+              <label
+                htmlFor="password"
+                className="block text-sm font-medium text-gray-700 mb-1"
+              >
                 Password
               </label>
               <input
+                id="password"
+                name="password"
                 type="password"
-                placeholder="At least 6 characters"
+                placeholder={`At least ${MIN_PASSWORD_LENGTH} characters, with a number`}
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 required
@@ -100,10 +118,15 @@ export default function RegisterPage() {
               />
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
+              <label
+                htmlFor="confirmPassword"
+                className="block text-sm font-medium text-gray-700 mb-1"
+              >
                 Confirm Password
               </label>
               <input
+                id="confirmPassword"
+                name="confirmPassword"
                 type="password"
                 placeholder="Re-enter password"
                 value={confirmPassword}

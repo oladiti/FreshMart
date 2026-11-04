@@ -71,12 +71,12 @@ const extraProducts = [
 
 // ✅ New Arrivals
 const newArrivals = [
-  { name: "Easy Naija Green Pepper Sauce (Ayamase) 500g", price: 7.99, description: "Spicy green pepper sauce from Naija", category: "Ethnic Food", image: "/images/green-pepper-sauce.jpg", countInStock: randomStock(5, 50), isNewArrival: true },
+  { name: "Easy Naija Green Pepper Sauce (Ayamase) 500g", price: 7.99, description: "Spicy green pepper sauce from Naija", category: "Ethnic Food", image: "/images/Easy Naija Green Pepper Sauce.jpeg", countInStock: randomStock(5, 50), isNewArrival: true },
   { name: "Easy Naija Buka Stew 500g", price: 7.99, description: "Classic buka stew, ready to eat", category: "Ethnic Food", image: "/images/buka-stew.jpg", countInStock: randomStock(5, 50), isNewArrival: true },
   { name: "Easy Naija Ewa Agoyin Sauce 500g", price: 7.99, description: "Rich beans sauce, Nigerian style", category: "Ethnic Food", image: "/images/ewa-agoyin.jpg", countInStock: randomStock(5, 50), isNewArrival: true },
   { name: "Costack Yaji (Suya Pepper) 362G", price: 11.99, description: "Traditional suya pepper mix", category: "Spices", image: "/images/suya-pepper.jpg", countInStock: randomStock(10, 30), isNewArrival: true },
   { name: "Fresh Yam (per kilo, NOT per tuber)", price: 3.99, description: "Fresh yam, sold by weight", category: "Vegetables", image: "/images/fresh-yam.jpg", countInStock: randomStock(30, 70), isNewArrival: true },
-  { name: "Lobster Tail (each)", price: 9.99, description: "Premium lobster tail", category: "Fish", image: "/images/lobster-tail.jpg", countInStock: 0, isNewArrival: true }, // sold out
+  { name: "Lobster Tail (each)", price: 9.99, description: "Premium lobster tail", category: "Fish", image: "/images/lobster-tail.jpeg", countInStock: 0, isNewArrival: true }, // sold out
 ];
 
 // ✅ Weekly Deals
@@ -123,7 +123,7 @@ const products = [
   { name: "Canned Beans 400g", description: "Canned baked beans.", price: 0.99, category: "Pantry", image: "/images/canned-beans.jpeg", countInStock: randomStock() },
   { name: "Canned Tuna 200g", description: "Tuna chunks in brine.", price: 2.49, category: "Pantry", image: "/images/canned-tuna.jpeg", countInStock: randomStock() },
   { name: "Flour 1kg", description: "All-purpose flour.", price: 1.89, category: "Pantry", image: "/images/flour.jpg", countInStock: randomStock() },
-  { name: "Sugar 1kg", description: "Granulated white sugar.", price: 1.29, category: "Pantry", image: "/images/sugar.jpg", countInStock: randomStock() },
+  { name: "Sugar 1kg", description: "Granulated white sugar.", price: 1.29, category: "Pantry", image: "/images/sugar.jpeg", countInStock: randomStock() },
   { name: "Salt 500g", description: "Refined table salt.", price: 0.79, category: "Pantry", image: "/images/salt.jpg", countInStock: randomStock() },
   { name: "Cooking Oil 1Ltr", description: "Vegetable cooking oil.", price: 3.49, category: "Pantry", image: "/images/cooking-oil.jpg", countInStock: randomStock() },
   { name: "Vinegar 500ml", description: "White distilled vinegar.", price: 1.99, category: "Pantry", image: "/images/vinegar.jpeg", countInStock: randomStock() },
@@ -143,10 +143,10 @@ const products = [
   { name: "Walnuts 200g", description: "Shelled walnuts.", price: 5.49, category: "Snacks", image: "/images/walnuts.jpg", countInStock: randomStock() },
   { name: "Cashews 200g", description: "Roasted cashew nuts.", price: 5.99, category: "Snacks", image: "/images/cashews.jpg", countInStock: randomStock() },
   { name: "Sunflower Seeds 200g", description: "Roasted sunflower seeds.", price: 2.99, category: "Snacks", image: "/images/sunflower-seeds.jpg", countInStock: randomStock() },
-  { name: "Chia Seeds 200g", description: "Nutrient-rich chia seeds.", price: 3.99, category: "Snacks", image: "/images/chia-seeds.jpg", countInStock: randomStock() },
+  { name: "Chia Seeds 200g", description: "Nutrient-rich chia seeds.", price: 3.99, category: "Snacks", image: "/images/Chia_-Seeds_200g_front.png", countInStock: randomStock() },
   { name: "Olive Oil 1L", description: "Extra virgin olive oil.", price: 9.99, category: "Cooking Oil", image: "/images/olive-oil.jpg", countInStock: randomStock() },
   { name: "Canola Oil 1L", description: "Healthy canola cooking oil.", price: 4.49, category: "Cooking Oil", image: "/images/canola-oil.jpg", countInStock: randomStock() },
-  { name: "Sunflower Oil 1L", description: "Light sunflower cooking oil.", price: 4.29, category: "Cooking Oil", image: "/images/sunflower-oil.jpg", countInStock: randomStock() },
+  { name: "Sunflower Oil 1L", description: "Light sunflower cooking oil.", price: 4.29, category: "Cooking Oil", image: "/images/Sunflower Oil 1L.jpg", countInStock: randomStock() },
   { name: "Sesame Oil 500ml", description: "Aromatic sesame oil.", price: 6.99, category: "Cooking Oil", image: "/images/sesame-oil.jpg", countInStock: randomStock() },
   { name: "Soy Sauce 500ml", description: "Dark soy sauce bottle.", price: 2.99, category: "Cooking Essentials", image: "/images/soy-sauce.jpg", countInStock: randomStock() },
   { name: "Vinegar 1L", description: "White vinegar bottle.", price: 1.99, category: "Cooking Essentials", image: "/images/vinegar-1l.jpg", countInStock: randomStock() },
@@ -162,13 +162,13 @@ const products = [
   { name: "Turmeric Powder 100g", description: "Bright yellow turmeric powder.", price: 2.39, category: "Cooking Essentials", image: "/images/turmeric-powder.jpg", countInStock: randomStock() },
   { name: "Coriander Seeds 100g", description: "Aromatic coriander seeds.", price: 1.99, category: "Cooking Essentials", image: "/images/coriander-seeds.jpg", countInStock: randomStock() },
   { name: "Cumin Seeds 100g", description: "Earthy cumin seeds.", price: 1.99, category: "Cooking Essentials", image: "/images/cumin-seeds.jpg", countInStock: randomStock() },
-  { name: "Mustard Seeds 100g", description: "Tangy mustard seeds.", price: 1.99, category: "Cooking Essentials", image: "/images/mustard-seeds.jpg", countInStock: randomStock() },
+  { name: "Mustard Seeds 100g", description: "Tangy mustard seeds.", price: 1.99, category: "Cooking Essentials", image: "/images/Mustard Seeds .webp", countInStock: randomStock() },
   { name: "Fennel Seeds 100g", description: "Sweet fennel seeds.", price: 1.99, category: "Cooking Essentials", image: "/images/fennel-seeds.jpg", countInStock: randomStock() },
   { name: "Cardamom Pods 50g", description: "Fragrant cardamom pods.", price: 3.99, category: "Cooking Essentials", image: "/images/cardamom-pods.jpg", countInStock: randomStock() },
   { name: "Star Anise 50g", description: "Licorice-flavored star anise.", price: 2.99, category: "Cooking Essentials", image: "/images/star-anise.jpg", countInStock: randomStock() },
   { name: "Saffron 1g", description: "Premium saffron threads.", price: 9.99, category: "Cooking Essentials", image: "/images/saffron.jpg", countInStock: randomStock() },
   { name: "Vanilla Beans 2 pods", description: "Aromatic vanilla beans.", price: 4.99, category: "Cooking Essentials", image: "/images/vanilla-beans.jpg", countInStock: randomStock() },
-  { name: "Allspice 100g", description: "Warm allspice powder.", price: 2.49, category: "Cooking Essentials", image: "/images/allspice.jpg", countInStock: randomStock() },
+  { name: "Allspice 100g", description: "Warm allspice powder.", price: 2.49, category: "Cooking Essentials", image: "/images/Allspice.jpg", countInStock: randomStock() },
   { name: "Garam Masala 100g", description: "Indian spice blend garam masala.", price: 2.99, category: "Cooking Essentials", image: "/images/garam-masala.jpg", countInStock: randomStock() },
   { name: "Curry Leaves 50g", description: "Fresh curry leaves.", price: 1.99, category: "Cooking Essentials", image: "/images/curry-leaves.jpg", countInStock: randomStock() },
   { name: "Lemongrass 100g", description: "Fresh lemongrass stalks.", price: 1.49, category: "Cooking Essentials", image: "/images/lemongrass.jpg", countInStock: randomStock() },
@@ -195,7 +195,7 @@ const products = [
   { name: "Egusi Seeds 500g", description: "Ground melon seeds for Nigerian soups.", price: 7.99, category: "Ethnic Food", image: "/images/egusi.jpg", countInStock: randomStock(10, 50) },
   { name: "Stockfish Head", description: "Traditional dried stockfish head.", price: 14.99, category: "Ethnic Food", image: "/images/stockfish.jpg", countInStock: randomStock(5, 20) },
   { name: "Okra 1kg", description: "Fresh okra pods.", price: 4.99, category: "Ethnic Food", image: "/images/okra.jpg", countInStock: randomStock(10, 40) },
-  { name: "Plantain (per kilo)", description: "Fresh ripe plantain.", price: 3.99, category: "Ethnic Food", image: "/images/plantain.jpg", countInStock: randomStock(15, 60) },
+  { name: "Plantain (per kilo)", description: "Fresh ripe plantain.", price: 3.99, category: "Ethnic Food", image: "/images/plantain..jpg", countInStock: randomStock(15, 60) },
   { name: "Ofada Rice 5kg", description: "Local Nigerian rice variety.", price: 19.99, category: "Ethnic Food", image: "/images/ofada-rice.jpg", countInStock: randomStock(5, 30) },
   { name: "Groundnut Oil 1Ltr", description: "Traditional groundnut cooking oil.", price: 6.99, category: "Ethnic Food", image: "/images/groundnut-oil.jpg", countInStock: randomStock(10, 40) },
   { name: "Basmati Rice 5kg", description: "Fragrant long grain basmati rice.", price: 15.99, category: "Pantry", image: "/images/basmati-rice.jpeg", countInStock: randomStock() },
@@ -204,10 +204,10 @@ const products = [
   { name: "Fried Rice Mix 500g", description: "Seasoning mix for fried rice.", price: 3.99, category: "Pantry", image: "/images/fried-rice-mix.jpg", countInStock: randomStock() },
   { name: "Curry Powder 100g", description: "Aromatic curry spice blend.", price: 2.99, category: "Spices", image: "/images/curry-powder.jpg", countInStock: randomStock() },
   { name: "Thyme 100g", description: "Dried thyme herb.", price: 1.99, category: "Spices", image: "/images/thyme.jpg", countInStock: randomStock() },
-  { name: "Cumin 100g", description: "Ground cumin spice.", price: 2.49, category: "Spices", image: "/images/cumin.jpg", countInStock: randomStock() },
+  { name: "Cumin 100g", description: "Ground cumin spice.", price: 2.49, category: "Spices", image: "/images/Cumin.jpg", countInStock: randomStock() },
   { name: "Paprika 100g", description: "Smoked paprika spice.", price: 2.49, category: "Spices", image: "/images/paprika.jpg", countInStock: randomStock() },
   { name: "Chili Powder 100g", description: "Spicy chili powder.", price: 2.49, category: "Spices", image: "/images/chili-powder.jpg", countInStock: randomStock() },
-  { name: "Black Pepper 100g", description: "Ground black pepper.", price: 2.49, category: "Spices", image: "/images/black-pepper.jpg", countInStock: randomStock() },
+  { name: "Black Pepper 100g", description: "Ground black pepper.", price: 2.49, category: "Spices", image: "/images/Black Pepper 100g.jpg", countInStock: randomStock() },
   { name: "Garlic Powder 100g", description: "Dried garlic powder.", price: 1.99, category: "Spices", image: "/images/garlic-powder.jpg", countInStock: randomStock() },
 
   // Poultry
@@ -387,6 +387,7 @@ const importData = async () => {
         name: "Demo User",
         email: "demo@example.com",
         password: "password123",
+        isVerified: true,
       });
     }
 
@@ -399,6 +400,7 @@ const importData = async () => {
         email: ADMIN_EMAIL,
         password: process.env.ADMIN_PASSWORD || "admin12345",
         role: "admin",
+        isVerified: true,
       });
       console.log(`👤 Created admin account: ${ADMIN_EMAIL}`);
     } else if (adminUser.role !== "admin") {

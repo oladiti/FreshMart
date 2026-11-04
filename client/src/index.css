@@ -116,6 +116,13 @@ h1, h2, h3, h4, .heading {
   border-color: #A6F4C5;
 }
 
+/* Product tiles animated by framer-motion: framer owns `transform`, so letting
+   CSS transition it would fight the per-frame updates and make hover jitter.
+   Keep only the shadow/border transitions. */
+.product-card.motion-card {
+  transition: box-shadow 0.25s ease, border-color 0.25s ease;
+}
+
 /* Shared additive-to-cart pill used across product cards */
 .add-to-cart {
   display: inline-flex;

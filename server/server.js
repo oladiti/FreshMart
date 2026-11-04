@@ -4,22 +4,50 @@ import path from 'path';
 import { fileURLToPath } from 'url';
 import mongoose from 'mongoose';
 import app from './app.js';
+import { validateEnv } from './config/env.js';
 import { backfillMissingSlugs, backfillMissingSkus, backfillMissingRecipeSlugs } from './backfill-slugs.js';
+import { backfillMissingOrderCategories } from './backfill-order-categories.js';
 import Product from './models/Product.js';
 import Order from './models/Order.js';
 import { computeRecommendations } from './services/recommendations/computeRecommendations.js';
+import { describeDbConnectionError } from './utils/dbError.js';
+import { MONGO_OPTIONS } from './config/db.js';
 
 // Load server/.env relative to this file so `npm start` works from any cwd.
 // On Render env vars are already injected, and dotenv does not override them.
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 dotenv.config({ path: path.resolve(__dirname, '.env') });
 
+// Validate required configuration before anything connects. In production this
+// throws on a missing/weak signing secret or DB URI (a short or default
+// JWT_SECRET lets anyone forge tokens and impersonate any user, including
+// admins). Local dev only logs warnings.
+try {
+  validateEnv();
+} catch (envError) {
+  console.error(`❌ ${envError.message}`);
+  process.exit(1);
+}
+
 // Connect DB & start server
 const PORT = process.env.PORT || 5000;
 const MONGO_URI = process.env.MONGO_URI;
 
+// Surface transient drops instead of letting them look like a crash. The
+// driver reconnects automatically; these listeners make the recovery visible
+// and keep runtime queries failing/warning rather than hanging forever.
+mongoose.connection.on('disconnected', () => {
+  console.warn('⚠️  MongoDB disconnected — waiting for automatic reconnect...');
+});
+mongoose.connection.on('reconnected', () => {
+  console.log('✅ MongoDB reconnected');
+});
+mongoose.connection.on('error', (connError) => {
+  console.error('MongoDB connection error:', connError.message);
+});
+
 mongoose
-  .connect(MONGO_URI)
+  .connect(MONGO_URI, MONGO_OPTIONS)
   .then(async () => {
     console.log('MongoDB connected');
     // Ensure every product has a slug so product URLs never expose the _id
@@ -35,7 +63,15 @@ mongoose
     // Ensure every recipe has a slug so recipe URLs never expose the _id
     const recipeSlugsBackfilled = await backfillMissingRecipeSlugs();
     if (recipeSlugsBackfilled > 0) {
-      console.log(`✅ Backfilled ${recipeSlugsBackfilled} missing recipe slug(s)`);
+      console.log(`�o. Backfilled ${recipeSlugsBackfilled} missing recipe slug(s)`);
+    }
+    // Ensure existing order items have a category snapshot so analytics keeps
+    // working after products are deleted or replaced.
+    const orderCategoriesBackfilled = await backfillMissingOrderCategories();
+    if (orderCategoriesBackfilled > 0) {
+      console.log(
+        `Backfilled categories for ${orderCategoriesBackfilled} order(s)`
+      );
     }
 
     // Build the query indexes the storefront relies on (Atlas may have
@@ -61,6 +97,6 @@ mongoose
     );
   })
   .catch((err) => {
-    console.error('DB connection error:', err.message);
+    console.error('DB connection error:', describeDbConnectionError(err));
     process.exit(1);
   });

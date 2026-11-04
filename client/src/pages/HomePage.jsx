@@ -5,6 +5,7 @@ import { FaQuoteLeft, FaEnvelope, FaStar } from "react-icons/fa";
 import WeeklyDealCard from "../components/WeeklyDealCard";
 import Button from "../components/Button";
 import AddToCartButton from "../components/AddToCartButton";
+import SafeImage from "../components/SafeImage";
 import api from "../utils/api";
 import NewArrivals from "../components/NewArrivals";
 import RecommendedProducts from "../components/RecommendedProducts";
@@ -126,24 +127,14 @@ const HomePage = () => {
               <motion.div
                 key={product._id || product.name}
                 variants={fadeUp}
-                whileHover={{ y: -5 }}
-                transition={{ type: "spring", stiffness: 200, damping: 15 }}
-                className="product-card group"
+                whileHover={{ y: -5, transition: { type: "spring", stiffness: 200, damping: 15 } }}
+                className="product-card motion-card group"
               >
                 <Link to={`/products/${product.slug}`} className="flex-1">
                   <div className="relative overflow-hidden">
-                    <img
-                      src={
-                        product.image ||
-                        product.img ||
-                        product.imageUrl ||
-                        "/images/placeholder.jpg"
-                      }
+                    <SafeImage
+                      src={product.image || product.img || product.imageUrl}
                       alt={product.name}
-                      loading="lazy"
-                      onError={(e) =>
-                        (e.target.src = "/images/placeholder.jpg")
-                      }
                       className="h-56 w-full object-cover transition-transform duration-300 group-hover:scale-105"
                     />
                     {product.category && (
@@ -277,6 +268,7 @@ const HomePage = () => {
             </label>
             <input
               id="home-newsletter-email"
+              name="email"
               type="email"
               placeholder="Enter your email"
               required

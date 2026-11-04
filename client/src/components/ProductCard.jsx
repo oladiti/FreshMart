@@ -1,5 +1,6 @@
 import React, { memo } from "react";
 import AddToCartButton from "./AddToCartButton";
+import SafeImage from "./SafeImage";
 
 const ProductCard = memo(function ProductCard({ product }) {
   // Format price once (prevents recalculations on re-renders)
@@ -17,11 +18,9 @@ const ProductCard = memo(function ProductCard({ product }) {
       aria-label={product.name}
     >
       <figure className="relative m-2.5 overflow-hidden rounded-xl bg-cream/70">
-        <img
+        <SafeImage
           src={product.image}
           alt={product.name || "Product"}
-          loading="lazy"
-          onError={(e) => (e.target.src = "/images/placeholder.jpg")}
           className="h-44 w-full object-cover transition-transform duration-300 group-hover:scale-105"
         />
         {soldOut && (

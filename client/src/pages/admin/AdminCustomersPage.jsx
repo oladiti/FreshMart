@@ -164,7 +164,12 @@ export default function AdminCustomersPage() {
 
       <div className="relative mb-5 max-w-md">
         <Search className="w-4 h-4 text-gray-400 absolute left-3 top-1/2 -translate-y-1/2" />
+        <label htmlFor="customer-search" className="sr-only">
+          Search customers
+        </label>
         <input
+          id="customer-search"
+          name="search"
           type="text"
           value={search}
           onChange={(e) => setSearch(e.target.value)}

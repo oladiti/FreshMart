@@ -3,10 +3,13 @@ import {
   setupApiTest,
   teardownApiTest,
   seedUsers,
+  seedOrder,
   generateToken,
   getUserDoc,
 } from "./apiSetup.js";
 import Product from "../../models/Product.js";
+import Cart from "../../models/Cart.js";
+import Order from "../../models/Order.js";
 
 const post = (body, token) => {
   const req = agent().post("/api/ai/chat").send(body);
@@ -33,6 +36,8 @@ describe("AI Chat API", () => {
 
   beforeEach(async () => {
     await Product.deleteMany({});
+    await Cart.deleteMany({});
+    await Order.deleteMany({});
     await seedUsers();
   });
 
@@ -117,6 +122,87 @@ describe("AI Chat API", () => {
       const res = await post({ message: "show me rice (5kg) [a-z] \\d" });
       expect(res.status).toBe(200);
       expect(JSON.stringify(res.body)).not.toMatch(/\$regex|MongoServerError|AI_API_KEY/i);
+    });
+  });
+
+  describe("POST /api/ai/chat — cart intents (degraded)", () => {
+    it("asks an anonymous shopper to sign in to see their cart", async () => {
+      const res = await post({ message: "check my cart" });
+
+      expect(res.status).toBe(200);
+      expect(res.body.degraded).toBe(true);
+      expect(res.body.data.cart).toBeNull();
+      expect(res.body.data.authRequired).toBe(true);
+      expect(res.body.message).toMatch(/sign in/i);
+    });
+
+    it("shows a signed-in shopper their server cart", async () => {
+      const products = await Product.insertMany(CATALOGUE);
+      const rice = products.find((p) => p.name === "Rice 5kg");
+      const user = await getUserDoc();
+      await Cart.create({
+        user: user._id,
+        items: [{ product: rice._id, quantity: 2 }],
+      });
+      const token = generateToken(user._id, user.role);
+
+      const res = await post({ message: "check my cart" }, token);
+
+      expect(res.body.data.authRequired).toBe(false);
+      expect(res.body.data.cart).toBeTruthy();
+      expect(res.body.data.cart.totalItems).toBe(2);
+      expect(res.body.data.cart.total).toBeCloseTo(25.98, 2);
+      expect(res.body.data.cart.items[0].product.name).toBe("Rice 5kg");
+      expect(res.body.message).toMatch(/2 items/i);
+    });
+
+    it("tells a signed-in shopper when their cart is empty", async () => {
+      await Product.insertMany(CATALOGUE);
+      const user = await getUserDoc();
+      const token = generateToken(user._id, user.role);
+
+      const res = await post({ message: "check my cart" }, token);
+
+      expect(res.body.data.authRequired).toBe(false);
+      expect(res.body.data.cart.items).toEqual([]);
+      expect(res.body.message).toMatch(/cart is empty/i);
+    });
+  });
+
+  describe("POST /api/ai/chat — order intents (degraded)", () => {
+    it("asks an anonymous shopper to sign in to see their orders", async () => {
+      const res = await post({ message: "track my last order" });
+
+      expect(res.status).toBe(200);
+      expect(res.body.degraded).toBe(true);
+      expect(res.body.data.orders).toEqual([]);
+      expect(res.body.data.authRequired).toBe(true);
+      expect(res.body.message).toMatch(/sign in/i);
+    });
+
+    it("lists a signed-in shopper's recent orders", async () => {
+      const user = await getUserDoc();
+      await seedOrder(user._id);
+      const token = generateToken(user._id, user.role);
+
+      const res = await post({ message: "track my last order" }, token);
+
+      expect(res.body.data.authRequired).toBe(false);
+      expect(res.body.data.orders).toHaveLength(1);
+      expect(res.body.data.orders[0].status).toBe("pending");
+      expect(res.body.data.orders[0].reference).toHaveLength(8);
+      expect(res.body.message).toMatch(/most recent order/i);
+    });
+
+    it("says so when a signed-in shopper has no orders", async () => {
+      const user = await getUserDoc();
+      const token = generateToken(user._id, user.role);
+
+      const res = await post({ message: "my orders" }, token);
+
+      expect(res.body.data.authRequired).toBe(false);
+      expect(res.body.data.orders).toEqual([]);
+      expect(res.body.message).toMatch(/haven't placed any orders/i);
     });
   });
 });

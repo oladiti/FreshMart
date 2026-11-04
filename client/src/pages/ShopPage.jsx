@@ -9,6 +9,7 @@ import { Link, useSearchParams } from "react-router-dom";
 import { AnimatePresence, motion } from "framer-motion";
 import Pagination from "../components/Pagination";
 import AddToCartButton from "../components/AddToCartButton";
+import SafeImage from "../components/SafeImage";
 import { PackageSearch, SlidersHorizontal, X } from "lucide-react";
 import api from "../utils/api"; //  your axios instance
 
@@ -70,10 +71,14 @@ function FilterControlSections({
         >
           {visible.map((cat) => (
             <li key={cat}>
-              <label className="flex cursor-pointer items-center gap-2.5 rounded-lg px-2 py-1.5 text-sm text-gray-600 transition-colors hover:bg-primary-50 hover:text-gray-900">
+              <label
+                htmlFor={`category-${cat.replace(/[^a-z0-9]+/gi, "-").toLowerCase()}`}
+                className="flex cursor-pointer items-center gap-2.5 rounded-lg px-2 py-1.5 text-sm text-gray-600 transition-colors hover:bg-primary-50 hover:text-gray-900"
+              >
                 <input
+                  id={`category-${cat.replace(/[^a-z0-9]+/gi, "-").toLowerCase()}`}
+                  name="category"
                   type="checkbox"
-                  aria-label={cat}
                   checked={selectedCategories.includes(cat)}
                   onChange={() => onToggleCategory(cat)}
                   className="h-4 w-4 shrink-0 rounded border-gray-300 accent-primary-600"
@@ -542,9 +547,11 @@ const ShopPage = ({ searchQuery = "" }) => {
               </button>
             )}
 
-            <label className="flex items-center gap-2 text-sm text-gray-600">
+            <label htmlFor="items-per-page" className="flex items-center gap-2 text-sm text-gray-600">
               <span className="hidden sm:inline">Show</span>
               <select
+                id="items-per-page"
+                name="itemsPerPage"
                 value={itemsPerPage}
                 onChange={(e) =>
                   updateParams({
@@ -556,7 +563,6 @@ const ShopPage = ({ searchQuery = "" }) => {
                   })
                 }
                 className="rounded-lg border border-gray-200 bg-white px-3 py-1.5 text-sm text-gray-700 shadow-sm focus:border-primary-500 focus:outline-none focus:ring-2 focus:ring-primary-200"
-                aria-label="Products per page"
               >
                 {PAGE_SIZES.map((size) => (
                   <option key={size} value={size}>
@@ -587,10 +593,9 @@ const ShopPage = ({ searchQuery = "" }) => {
                   className="flex-1"
                 >
                   <div className="relative overflow-hidden">
-                    <img
-                      src={item.image || item.img || "/images/placeholder.jpg"}
+                    <SafeImage
+                      src={item.image || item.img}
                       alt={item.name}
-                      onError={(e) => (e.target.src = "/images/placeholder.jpg")}
                       className="h-40 w-full object-cover transition-transform duration-300 group-hover:scale-105"
                     />
                     {item.category && (

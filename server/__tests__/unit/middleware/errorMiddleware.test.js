@@ -30,6 +30,27 @@ describe('errorHandler middleware', () => {
     expect(res.json).toHaveBeenCalledWith({ message: 'Something broke', stack: null });
   });
 
+  it('hides internal error messages for 5xx in production', () => {
+    const err = new Error('MongoServerError: duplicate key E11000');
+    delete err.statusCode;
+    const req = { method: 'GET', originalUrl: '/api/secret' };
+    const res = {
+      status: jest.fn().mockReturnThis(),
+      json: jest.fn(),
+    };
+    const next = jest.fn();
+    const spy = jest.spyOn(console, 'error').mockImplementation(() => {});
+    process.env.NODE_ENV = 'production';
+    errorHandler(err, req, res, next);
+    expect(res.status).toHaveBeenCalledWith(500);
+    expect(res.json).toHaveBeenCalledWith({
+      message: 'Something went wrong',
+      stack: null,
+    });
+    expect(spy).toHaveBeenCalled();
+    spy.mockRestore();
+  });
+
   it('defaults to status 500 when no status code set', () => {
     const err = new Error('Server crash');
     delete err.statusCode;

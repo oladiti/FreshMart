@@ -3,6 +3,36 @@ import { slugify } from "../utils/slugify.js";
 
 export { slugify };
 
+// Fields a client is allowed to set on a product via the admin/product write
+// endpoints. Server-managed fields (slug is derived from name, reviews come
+// from the review endpoint, _id/timestamps are internal) are intentionally
+// excluded so a crafted request body can't overwrite them (mass assignment).
+export const PRODUCT_EDITABLE_FIELDS = [
+  "name",
+  "price",
+  "description",
+  "category",
+  "image",
+  "images",
+  "isFeatured",
+  "isWeeklyDeal",
+  "isNewArrival",
+  "tags",
+  "nutrition",
+  "related",
+  "countInStock",
+  "brand",
+  "sku",
+];
+
+// Return only the allow-listed product fields present on the request body.
+export const pickProductFields = (body = {}) =>
+  Object.fromEntries(
+    PRODUCT_EDITABLE_FIELDS.filter((key) =>
+      Object.prototype.hasOwnProperty.call(body, key)
+    ).map((key) => [key, body[key]])
+  );
+
 // Build a readable, collab-resistant merchant SKU (Stock Keeping Unit).
 // Format: FM-<CATEGORY-3><RANDOM-4> (e.g. FM-FRU-K7D2). Never derived from
 // the Mongo _id. Exported so seeders/tests can generate the same format.

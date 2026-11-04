@@ -3,6 +3,7 @@ import { useParams, Link, useNavigate } from "react-router-dom";
 import api from "../utils/api";
 import { Lock } from "lucide-react";
 import BackToHome from "../components/BackToHome";
+import { validatePassword, MIN_PASSWORD_LENGTH } from "../utils/passwordPolicy";
 
 export default function ResetPasswordPage() {
   const { token } = useParams();
@@ -22,8 +23,9 @@ export default function ResetPasswordPage() {
       setError("Passwords do not match.");
       return;
     }
-    if (password.length < 6) {
-      setError("Password must be at least 6 characters long.");
+    const passwordError = validatePassword(password);
+    if (passwordError) {
+      setError(passwordError);
       return;
     }
 
@@ -69,12 +71,17 @@ export default function ResetPasswordPage() {
 
       <form onSubmit={handleSubmit} className="space-y-4">
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">
+          <label
+            htmlFor="password"
+            className="block text-sm font-medium text-gray-700 mb-1"
+          >
             New Password
           </label>
           <input
+            id="password"
+            name="password"
             type="password"
-            placeholder="At least 6 characters"
+            placeholder={`At least ${MIN_PASSWORD_LENGTH} characters, with a number`}
             value={password}
             onChange={(e) => setPassword(e.target.value)}
             required
@@ -82,10 +89,15 @@ export default function ResetPasswordPage() {
           />
         </div>
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">
+          <label
+            htmlFor="confirmPassword"
+            className="block text-sm font-medium text-gray-700 mb-1"
+          >
             Confirm New Password
           </label>
           <input
+            id="confirmPassword"
+            name="confirmPassword"
             type="password"
             placeholder="Re-enter new password"
             value={confirmPassword}

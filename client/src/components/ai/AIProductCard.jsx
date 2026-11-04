@@ -1,6 +1,7 @@
 import { Link } from "react-router-dom";
 import { Plus, Check, ExternalLink } from "lucide-react";
 import { formatPrice } from "../../utils/currency";
+import SafeImage from "../SafeImage";
 
 /**
  * Compact product card for AI assistant results.
@@ -17,10 +18,10 @@ export default function AIProductCard({ product, onAdd, added }) {
   return (
     <li className="flex items-center gap-3 rounded-xl border border-gray-100 bg-white p-2.5 shadow-sm">
       <Link to={href} className="group flex min-w-0 flex-1 items-center gap-3">
-        <img
+        <SafeImage
           src={product.image}
           alt=""
-          className="h-14 w-14 shrink-0 rounded-lg object-cover bg-gray-100"
+          className="h-14 w-14 shrink-0 rounded-lg object-cover"
         />
         <span className="min-w-0 flex-1">
           <span className="block truncate text-sm font-medium text-gray-800 group-hover:text-primary-600">

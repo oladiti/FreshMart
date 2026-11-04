@@ -6,11 +6,14 @@
  
 import Product from "../models/Product.js";
 import Recipe from "../models/Recipe.js";
+import Cart from "../models/Cart.js";
+import Order from "../models/Order.js";
 import { INTENTS, parseQuery, tokenize } from "../services/assistant/parseQuery.js";
 import { searchProducts } from "../services/assistant/tools/index.js";
 import { groundProduct } from "../services/assistant/tools/grounding.js";
 import { createMatcher, matchRecipe } from "../services/assistant/recipeMatch.js";
 import { buildBasket } from "../services/assistant/buildBasket.js";
+import { orderSummary } from "../services/ai/tools/orderTools.js";
  
 const MAX_QUERY_LENGTH = 300;
 const MAX_RESULTS = 24;
@@ -109,6 +112,8 @@ const SUGGESTIONS = {
   [INTENTS.RECIPE_INGREDIENTS]: ["What can I buy with a set budget?", "Show me spices"],
   [INTENTS.AVAILABILITY]: ["Show me vegetables", "Find cheap cooking oil"],
   [INTENTS.BUNDLE]: ["Ingredients for egusi soup", "Show me drinks"],
+  [INTENTS.MY_CART]: ["Check my cart", "Show me rice"],
+  [INTENTS.MY_ORDERS]: ["Track my last order", "Show me snacks"],
   [INTENTS.UNCLEAR]: [
     "Show me rice",
     "Find cheap cooking oil",
@@ -138,7 +143,14 @@ export const queryAssistant = async (req, res) => {
     let products = [];
     let basket = null;
     let recipe = null;
+    let cart = null;
+    let orders = [];
+    let authRequired = false;
     let clarifyingQuestion = null;
+
+    // The optional (authenticated) shopper. Cart and order intents are scoped
+    // to this identity; anonymous callers are told to sign in.
+    const user = req.user || null;
  
     // A budget above the dearest item filters nothing, so say so rather than
     // silently returning the whole shop.
@@ -155,7 +167,9 @@ export const queryAssistant = async (req, res) => {
       slots.minPrice !== null ||
       slots.maxPrice !== null ||
       slots.budget !== null ||
-      Boolean(slots.occasion);
+      Boolean(slots.occasion) ||
+      intent === INTENTS.MY_CART ||
+      intent === INTENTS.MY_ORDERS;
  
     if (intent === INTENTS.UNCLEAR || !hasTarget) {
       reply =
@@ -297,6 +311,45 @@ export const queryAssistant = async (req, res) => {
           break;
         }
  
+        case INTENTS.MY_CART: {
+          if (!user?._id) {
+            authRequired = true;
+            notes.push("auth-required");
+            reply =
+              "Your cart is saved to your account. Sign in and I can show you exactly what's in it.";
+            clarifyingQuestion = "Would you like to sign in?";
+            break;
+          }
+          const userCart = await Cart.findOrCreateFor(user._id);
+          cart = await userCart.toClientView();
+          reply = cart.items.length
+            ? `You have ${cart.totalItems} item${cart.totalItems === 1 ? "" : "s"} in your cart, totalling ${gbp(cart.total)}.`
+            : "Your cart is empty. Tell me what you'd like and I'll find it for you.";
+          break;
+        }
+
+        case INTENTS.MY_ORDERS: {
+          if (!user?._id) {
+            authRequired = true;
+            notes.push("auth-required");
+            reply =
+              "Your order history lives in your account. Sign in and I can look it up for you.";
+            clarifyingQuestion = "Would you like to sign in?";
+            break;
+          }
+          const recent = await Order.find({ user: user._id })
+            .sort({ createdAt: -1 })
+            .limit(5)
+            .lean();
+          orders = recent.map(orderSummary);
+          reply = orders.length
+            ? orders.length === 1
+              ? "Here's your most recent order."
+              : `Here are your ${orders.length} most recent orders.`
+            : "You haven't placed any orders with us yet.";
+          break;
+        }
+
         default: {
           products = (await resolveProducts(slots)).slice(0, 12).map(toCard);
           if (!products.length) {
@@ -338,6 +391,9 @@ export const queryAssistant = async (req, res) => {
       products,
       basket,
       recipe,
+      cart,
+      orders,
+      authRequired,
       notes,
       clarifyingQuestion,
       suggestions: SUGGESTIONS[intent] || SUGGESTIONS[INTENTS.UNCLEAR],

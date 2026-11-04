@@ -1,7 +1,7 @@
 // server/controllers/contactController.js
 import ContactMessage from "../models/ContactMessage.js";
 import Setting from "../models/Setting.js";
-import { transporter } from "../config/email.js";
+import { sendMail, isEmailConfigured } from "../config/email.js";
 
 const getSettingValue = async (key) => {
   const setting = await Setting.findOne({ key });
@@ -11,13 +11,16 @@ const getSettingValue = async (key) => {
 // Best-effort email notification. Never fails the request when email is
 // unavailable or not configured.
 const sendNotificationEmail = async ({ name, email, subject, message }) => {
-  const from = process.env.EMAIL_USER;
-  if (!from) return;
+  if (!isEmailConfigured()) return;
 
   // Never send real emails from the test suite
   if (process.env.NODE_ENV === "test") return;
 
-  const to = (await getSettingValue("supportEmail")) || from;
+  // Prefer a configured sender identity; otherwise let config/email.js apply
+  // its provider-aware default (EMAIL_FROM, else GMAIL_SENDER/EMAIL_USER).
+  const from = process.env.EMAIL_FROM || undefined;
+  const to =
+    (await getSettingValue("supportEmail")) || process.env.EMAIL_USER;
   if (!to) return;
 
   const safe = (value) => String(value || "").replace(/</g, "&lt;").replace(/>/g, "&gt;");
@@ -36,8 +39,8 @@ const sendNotificationEmail = async ({ name, email, subject, message }) => {
   `;
 
   try {
-    await transporter.sendMail({
-      from: `"FreshMart Contact" <${from}>`,
+    await sendMail({
+      from,
       to,
       replyTo: email,
       subject: `[Contact] ${subject || `New message from ${name}`}`,

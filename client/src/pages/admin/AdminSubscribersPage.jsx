@@ -213,6 +213,7 @@ export default function AdminSubscribersPage() {
         </label>
         <input
           id="subscriber-search"
+          name="search"
           type="text"
           value={search}
           onChange={(e) => setSearch(e.target.value)}

@@ -269,7 +269,12 @@ export default function AdminRecipesPage() {
       <div className="flex flex-wrap items-center gap-3 mb-5">
         <div className="relative flex-1 min-w-52 max-w-md">
           <Search className="w-4 h-4 text-gray-400 absolute left-3 top-1/2 -translate-y-1/2" />
+          <label htmlFor="recipe-search" className="sr-only">
+            Search recipes
+          </label>
           <input
+            id="recipe-search"
+            name="search"
             type="text"
             value={search}
             onChange={(e) => setSearch(e.target.value)}
@@ -321,10 +326,14 @@ export default function AdminRecipesPage() {
             <form onSubmit={handleSubmit} className="px-6 py-5 space-y-4">
               <div className="grid sm:grid-cols-2 gap-4">
                 <div className="sm:col-span-2">
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                  <label
+                    htmlFor="title"
+                    className="block text-sm font-medium text-gray-700 mb-1"
+                  >
                     Title *
                   </label>
                   <input
+                    id="title"
                     name="title"
                     required
                     value={form.title}
@@ -333,10 +342,14 @@ export default function AdminRecipesPage() {
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                  <label
+                    htmlFor="category"
+                    className="block text-sm font-medium text-gray-700 mb-1"
+                  >
                     Category *
                   </label>
                   <input
+                    id="category"
                     name="category"
                     required
                     value={form.category}
@@ -346,10 +359,14 @@ export default function AdminRecipesPage() {
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                  <label
+                    htmlFor="diet"
+                    className="block text-sm font-medium text-gray-700 mb-1"
+                  >
                     Diet
                   </label>
                   <select
+                    id="diet"
                     name="diet"
                     value={form.diet}
                     onChange={handleChange}
@@ -363,10 +380,14 @@ export default function AdminRecipesPage() {
                   </select>
                 </div>
                 <div className="sm:col-span-2">
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                  <label
+                    htmlFor="image"
+                    className="block text-sm font-medium text-gray-700 mb-1"
+                  >
                     Image URL
                   </label>
                   <input
+                    id="image"
                     name="image"
                     value={form.image}
                     onChange={handleChange}
@@ -387,10 +408,14 @@ export default function AdminRecipesPage() {
                   </div>
                 </div>
                 <div className="sm:col-span-2">
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                  <label
+                    htmlFor="description"
+                    className="block text-sm font-medium text-gray-700 mb-1"
+                  >
                     Description
                   </label>
                   <textarea
+                    id="description"
                     name="description"
                     rows={2}
                     value={form.description}
@@ -399,10 +424,14 @@ export default function AdminRecipesPage() {
                   />
                 </div>
                 <div className="sm:col-span-2">
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                  <label
+                    htmlFor="ingredients"
+                    className="block text-sm font-medium text-gray-700 mb-1"
+                  >
                     Ingredients * <span className="text-gray-400 font-normal">(one per line)</span>
                   </label>
                   <textarea
+                    id="ingredients"
                     name="ingredients"
                     rows={4}
                     required
@@ -413,10 +442,14 @@ export default function AdminRecipesPage() {
                   />
                 </div>
                 <div className="sm:col-span-2">
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                  <label
+                    htmlFor="steps"
+                    className="block text-sm font-medium text-gray-700 mb-1"
+                  >
                     Steps * <span className="text-gray-400 font-normal">(one per line)</span>
                   </label>
                   <textarea
+                    id="steps"
                     name="steps"
                     rows={4}
                     required

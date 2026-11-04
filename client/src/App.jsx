@@ -9,6 +9,7 @@ import Navbar from "./components/Navbar";
 import ProtectedRoute from "./components/ProtectedRoute";
 import AdminRoute from "./components/AdminRoute";
 import BackToTop from "./components/BackToTop";
+import FloatingCart from "./components/FloatingCart";
 
 // Routes are split into their own chunks so the first paint only downloads the
 // code for the page the visitor actually opened (instead of one large bundle).
@@ -27,6 +28,7 @@ const LoginPage = lazy(() => import("./pages/LoginPage"));
 const RegisterPage = lazy(() => import("./pages/RegisterPage"));
 const ForgotPasswordPage = lazy(() => import("./pages/ForgotPasswordPage"));
 const ResetPasswordPage = lazy(() => import("./pages/ResetPasswordPage"));
+
 const ProfilePage = lazy(() => import("./pages/ProfilePage"));
 const WeeklyDealsPage = lazy(() => import("./pages/WeeklyDealsPage"));
 const RecipesPage = lazy(() => import("./pages/RecipesPage"));
@@ -138,6 +140,7 @@ function AppShell() {
             <AIAssistant />
           </Suspense>
         )}
+        {!isAdminRoute && <FloatingCart />}
         {!isAdminRoute && <BackToTop />}
       </div>
   );

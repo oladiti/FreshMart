@@ -56,7 +56,7 @@ export const aiChat = async (req, res) => {
 
     // No provider configured: go straight to the rule-based assistant.
     if (!getAiConfig().apiKey) {
-      const fallback = await runFallback(message);
+      const fallback = await runFallback(message, user);
       return res.json({
         success: true,
         message: fallback.message,
@@ -77,7 +77,7 @@ export const aiChat = async (req, res) => {
       if (error instanceof AiProviderError) {
         // Provider timeout/network/5xx: answer with the rule-based engine so
         // the conversation still works.
-        const fallback = await runFallback(message);
+        const fallback = await runFallback(message, user);
         return res.json({
           success: true,
           message: fallback.message,

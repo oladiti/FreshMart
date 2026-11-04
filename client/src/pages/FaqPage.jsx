@@ -185,7 +185,12 @@ export default function FaqPage() {
       {/* Search */}
       <div className="relative max-w-xl mx-auto mt-8">
         <Search className="w-5 h-5 text-gray-400 absolute left-4 top-1/2 -translate-y-1/2" />
+        <label htmlFor="faq-search" className="sr-only">
+          Search FAQs
+        </label>
         <input
+          id="faq-search"
+          name="search"
           type="text"
           value={query}
           onChange={(e) => setQuery(e.target.value)}

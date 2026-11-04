@@ -24,6 +24,7 @@ export default function CheckoutPage() {
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
 
+
   const handleChange = (e) => {
     setForm({ ...form, [e.target.name]: e.target.value });
   };
@@ -61,6 +62,17 @@ export default function CheckoutPage() {
       .map((m) => m.name || m.id)
       .join(", ")}. Please review your cart and try again.`;
 
+  const applyCheckoutError = (d) => {
+    if (d?.code === "MISSING_PRODUCTS" && Array.isArray(d.missingItems)) {
+      removeMissingFromCart(d.missingItems);
+      setError(missingItemsMessage(d.missingItems));
+    } else {
+      setError(
+        d?.message || "Failed to place order. Please make sure you are logged in."
+      );
+    }
+  };
+
   const submitCardPayment = async (currentItems, currentForm) => {
     setError("");
     setSubmitting(true);
@@ -83,16 +95,7 @@ export default function CheckoutPage() {
     } catch (err) {
       const d = err.response?.data;
       console.error("Checkout payment intent failed:", d || err.response?.status || err.message);
-      if (d?.code === "MISSING_PRODUCTS" && Array.isArray(d.missingItems)) {
-        // Remove the stale items from the cart and let the user retry once the
-        // server tells us exactly what is gone - no confusing silent retries.
-        removeMissingFromCart(d.missingItems);
-        setError(missingItemsMessage(d.missingItems));
-      } else {
-        setError(
-          d?.message || "Failed to place order. Please make sure you are logged in."
-        );
-      }
+      applyCheckoutError(d);
     } finally {
       setSubmitting(false);
     }
@@ -112,14 +115,7 @@ export default function CheckoutPage() {
     } catch (err) {
       const d = err.response?.data;
       console.error("Checkout order failed:", d || err.response?.status || err.message);
-      if (d?.code === "MISSING_PRODUCTS" && Array.isArray(d.missingItems)) {
-        removeMissingFromCart(d.missingItems);
-        setError(missingItemsMessage(d.missingItems));
-      } else {
-        setError(
-          d?.message || "Failed to place order. Please make sure you are logged in."
-        );
-      }
+      applyCheckoutError(d);
       return false;
     } finally {
       setSubmitting(false);
@@ -210,8 +206,9 @@ export default function CheckoutPage() {
           >
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div>
-                <label className="block text-sm font-medium">Full Name</label>
+                <label htmlFor="fullName" className="block text-sm font-medium">Full Name</label>
                 <input
+                  id="fullName"
                   type="text"
                   name="fullName"
                   value={form.fullName}
@@ -221,8 +218,9 @@ export default function CheckoutPage() {
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium">Email</label>
+                <label htmlFor="email" className="block text-sm font-medium">Email</label>
                 <input
+                  id="email"
                   type="email"
                   name="email"
                   value={form.email}
@@ -234,10 +232,11 @@ export default function CheckoutPage() {
             </div>
 
             <div>
-              <label className="block text-sm font-medium">
+              <label htmlFor="street" className="block text-sm font-medium">
                 Street Address
               </label>
               <input
+                id="street"
                 type="text"
                 name="street"
                 value={form.street}
@@ -249,8 +248,9 @@ export default function CheckoutPage() {
 
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
               <div className="col-span-1">
-                <label className="block text-sm font-medium">City</label>
+                <label htmlFor="city" className="block text-sm font-medium">City</label>
                 <input
+                  id="city"
                   type="text"
                   name="city"
                   value={form.city}
@@ -260,8 +260,9 @@ export default function CheckoutPage() {
                 />
               </div>
               <div className="col-span-1">
-                <label className="block text-sm font-medium">State</label>
+                <label htmlFor="state" className="block text-sm font-medium">State</label>
                 <input
+                  id="state"
                   type="text"
                   name="state"
                   value={form.state}
@@ -270,8 +271,9 @@ export default function CheckoutPage() {
                 />
               </div>
               <div className="col-span-1">
-                <label className="block text-sm font-medium">Postcode</label>
+                <label htmlFor="postalCode" className="block text-sm font-medium">Postcode</label>
                 <input
+                  id="postalCode"
                   type="text"
                   name="postalCode"
                   value={form.postalCode}
@@ -281,8 +283,9 @@ export default function CheckoutPage() {
                 />
               </div>
               <div className="col-span-1">
-                <label className="block text-sm font-medium">Country</label>
+                <label htmlFor="country" className="block text-sm font-medium">Country</label>
                 <input
+                  id="country"
                   type="text"
                   name="country"
                   value={form.country}
@@ -294,10 +297,11 @@ export default function CheckoutPage() {
             </div>
 
             <div>
-              <label className="block text-sm font-medium">
+              <label htmlFor="paymentMethod" className="block text-sm font-medium">
                 Payment Method
               </label>
               <select
+                id="paymentMethod"
                 name="paymentMethod"
                 value={form.paymentMethod}
                 onChange={handleChange}

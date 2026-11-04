@@ -1,6 +1,7 @@
 import React from "react";
 import { Link } from "react-router-dom";
 import AddToCartButton from "./AddToCartButton";
+import SafeImage from "./SafeImage";
 
 const WeeklyDealCard = ({ product }) => {
   const soldOut = product.countInStock === 0;
@@ -12,11 +13,9 @@ const WeeklyDealCard = ({ product }) => {
         className="flex flex-1 flex-col text-center"
       >
         <div className="relative flex items-center justify-center overflow-hidden rounded-xl bg-cream/70 py-4">
-          <img
+          <SafeImage
             src={product.image}
             alt={product.name}
-            loading="lazy"
-            onError={(e) => (e.target.src = "/images/placeholder.jpg")}
             className="h-28 w-28 rounded-lg object-cover transition-transform duration-300 group-hover:scale-105"
           />
           {soldOut && (

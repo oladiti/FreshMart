@@ -18,6 +18,7 @@ import {
   LogOut,
 } from "lucide-react";
 import { AuthContext } from "../context/AuthContext";
+import { useNotifications } from "../context/NotificationContext";
 
 const navItems = [
   { label: "Dashboard", to: "/admin", end: true, icon: LayoutDashboard },
@@ -35,6 +36,7 @@ export default function AdminLayout() {
   const [drawerOpen, setDrawerOpen] = useState(false);
   const { pathname } = useLocation();
   const { logout } = useContext(AuthContext);
+  const { notify } = useNotifications();
 
   const currentLabel =
     navItems.find((item) =>
@@ -57,8 +59,12 @@ export default function AdminLayout() {
   const closeDrawer = () => setDrawerOpen(false);
 
   const handleLogout = () => {
+    if (typeof window !== "undefined" && !window.confirm("Sign out of your account?")) {
+      return;
+    }
     closeDrawer();
     logout();
+    notify("Signed out.");
   };
 
   return (

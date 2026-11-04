@@ -9,7 +9,7 @@
 import OrderModel from "../../../models/Order.js";
 import { asString, asPositiveInt, ensurePlainObject } from "./helpers.js";
 
-const orderSummary = (order) => ({
+export const orderSummary = (order) => ({
   _id: String(order._id),
   reference: String(order._id).slice(-8).toUpperCase(),
   status: order.status ?? null,

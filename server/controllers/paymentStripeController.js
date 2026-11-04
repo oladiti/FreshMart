@@ -1,7 +1,9 @@
 import Stripe from 'stripe';
 import dotenv from 'dotenv';
+import mongoose from 'mongoose';
 import Order from '../models/Order.js';
 import Product from '../models/Product.js';
+import { coerceQuantity, MAX_ITEM_QUANTITY } from '../utils/orderItems.js';
 
 dotenv.config();
 
@@ -10,7 +12,7 @@ const stripe = stripeKey && !stripeKey.includes('sk_test_xxx')
   ? new Stripe(stripeKey)
   : null;
 
-export const createPaymentIntent = async (req, res) => {
+export const createPaymentIntent = async (req, res, next) => {
   try {
     const { cart, customer, shippingAddress } = req.body;
 
@@ -19,10 +21,10 @@ export const createPaymentIntent = async (req, res) => {
       return res.status(400).json({ message: 'Cart is empty' });
     }
 
-    // Fetch products from DB using Mongoose
-    const items = [];
+    // Fetch products from DB and aggregate quantities per product so duplicate
+    // lines can't be used to bypass the stock check.
+    const lineItems = new Map(); // productId -> { product, qty }
     const missingItems = [];
-    let amount = 0;
 
     for (const it of cart) {
       const product = await Product.findById(it.id || it.productId);
@@ -33,22 +35,18 @@ export const createPaymentIntent = async (req, res) => {
         });
         continue;
       }
-      const qty = Number(it.quantity) || 1;
 
-      // Validate stock before charging
-      const stock = Number(product.countInStock ?? product.stock);
-      if (typeof stock === 'number' && stock < qty) {
-        console.warn(
-          `createPaymentIntent: insufficient stock for "${product.name}" (have ${stock}, need ${qty})`
-        );
+      const qty = coerceQuantity(it.quantity);
+      if (qty === null) {
         return res.status(400).json({
-          message: `Insufficient stock for "${product.name}". Only ${stock} available.`,
+          message: `Invalid quantity for "${product.name}". Use a whole number between 1 and ${MAX_ITEM_QUANTITY}.`,
         });
       }
 
-      const price = Number(product.price) || 0;
-      amount += price * qty;
-      items.push({ product, qty });
+      const key = String(product._id);
+      const existing = lineItems.get(key);
+      if (existing) existing.qty += qty;
+      else lineItems.set(key, { product, qty });
     }
 
     if (missingItems.length > 0) {
@@ -69,6 +67,26 @@ export const createPaymentIntent = async (req, res) => {
       });
     }
 
+    const items = [];
+    let amount = 0;
+
+    for (const { product, qty } of lineItems.values()) {
+      // Validate stock (across all lines for this product) before charging.
+      const stock = Number(product.countInStock ?? product.stock);
+      if (typeof stock === 'number' && stock < qty) {
+        console.warn(
+          `createPaymentIntent: insufficient stock for "${product.name}" (have ${stock}, need ${qty})`
+        );
+        return res.status(400).json({
+          message: `Insufficient stock for "${product.name}". Only ${stock} available.`,
+        });
+      }
+
+      const price = Number(product.price) || 0;
+      amount += price * qty;
+      items.push({ product, qty });
+    }
+
     const amountPence = Math.round(amount * 100);
     const customerEmail = customer?.email || '';
 
@@ -79,14 +97,17 @@ export const createPaymentIntent = async (req, res) => {
         .json({ message: 'A valid customer email is required' });
     }
 
-    // Create order in MongoDB with Mongoose
+    // Create order in MongoDB with Mongoose. The owner is always the
+    // authenticated user (never a client-supplied id) so a caller cannot
+    // attribute an order to someone else.
     const order = new Order({
-      user: customer?._id || customer?.id || null,
+      user: req.user ? req.user._id : null,
       items: items.map(({ product, qty }) => ({
         product: product._id,
         name: product.name,
         price: Number(product.price) || 0,
         image: product.image || '',
+        category: product.category ?? null,
         quantity: qty,
       })),
       total_amount: amount,
@@ -115,19 +136,23 @@ export const createPaymentIntent = async (req, res) => {
       receipt_email: customer?.email,
     });
 
+    // Remember the intent so confirm-order can verify it with Stripe later.
+    order.payment_info = order.payment_info || {};
+    order.payment_info.transaction_id = pi.id;
+    await order.save();
+
     res.json({ clientSecret: pi.client_secret, orderId: order._id, amount });
   } catch (err) {
-    console.error('createPaymentIntent error:', err.message);
-    res.status(500).json({ message: err.message });
+    next(err);
   }
 };
 
-export const confirmOrderPayment = async (req, res) => {
+export const confirmOrderPayment = async (req, res, next) => {
   try {
-    const { orderId, transactionId } = req.body;
+    const { orderId, transactionId } = req.body || {};
 
-    if (!orderId) {
-      return res.status(400).json({ message: 'orderId is required' });
+    if (!orderId || !mongoose.isValidObjectId(orderId)) {
+      return res.status(400).json({ message: 'A valid orderId is required' });
     }
 
     const order = await Order.findById(orderId);
@@ -135,16 +160,55 @@ export const confirmOrderPayment = async (req, res) => {
       return res.status(404).json({ message: 'Order not found' });
     }
 
+    // Only the order's owner (or an admin) may confirm its payment.
+    const orderUserId = order.user && (order.user._id || order.user);
+    const isOwner =
+      req.user && orderUserId && String(orderUserId) === String(req.user._id);
+    const isAdmin = req.user && req.user.role === 'admin';
+    if (!isOwner && !isAdmin) {
+      return res
+        .status(403)
+        .json({ message: 'Not authorized to confirm this order' });
+    }
+
+    // Never trust the client's word that a payment succeeded: verify the
+    // PaymentIntent with Stripe before marking the order paid.
+    if (stripe) {
+      if (!transactionId) {
+        return res.status(400).json({ message: 'transactionId is required' });
+      }
+
+      let intent;
+      try {
+        intent = await stripe.paymentIntents.retrieve(transactionId);
+      } catch (err) {
+        console.error('confirmOrderPayment: Stripe retrieve failed', err.message);
+        return res.status(400).json({ message: 'Unable to verify payment' });
+      }
+
+      const matchesOrder =
+        intent.metadata?.order_id &&
+        String(intent.metadata.order_id) === String(order._id);
+
+      if (intent.status !== 'succeeded' || !matchesOrder) {
+        return res
+          .status(400)
+          .json({ message: 'Payment has not been completed' });
+      }
+    } else if (process.env.NODE_ENV === 'production') {
+      // With no Stripe key configured there is nothing to verify, so demo
+      // confirmations must never be accepted in production.
+      return res
+        .status(503)
+        .json({ message: 'Payment processing is not configured' });
+    }
+
     // Guard against duplicate processing / double stock decrement
     const wasAlreadyPaid = order.status === 'paid';
     order.status = 'paid';
-    if (transactionId) {
-      order.payment_info = order.payment_info || {};
-      order.payment_info.transaction_id = transactionId;
-    } else {
-      order.payment_info = order.payment_info || {};
-      order.payment_info.transaction_id = order.payment_info.transaction_id || 'demo_payment';
-    }
+    order.payment_info = order.payment_info || {};
+    order.payment_info.transaction_id =
+      transactionId || order.payment_info.transaction_id || 'demo_payment';
     await order.save();
 
     if (!wasAlreadyPaid) {
@@ -162,12 +226,11 @@ export const confirmOrderPayment = async (req, res) => {
 
     res.json({ success: true, order });
   } catch (err) {
-    console.error('confirmOrderPayment error:', err.message);
-    res.status(500).json({ message: err.message });
+    next(err);
   }
 };
 
-export const stripeWebhookHandler = async (req, res) => {
+export const stripeWebhookHandler = async (req, res, next) => {
   const sig = req.headers['stripe-signature'];
 
   if (!stripe) {
@@ -216,7 +279,6 @@ export const stripeWebhookHandler = async (req, res) => {
     }
     res.json({ received: true });
   } catch (err) {
-    console.error('Webhook processing error', err);
-    res.status(500).json({ message: err.message });
+    next(err);
   }
 };

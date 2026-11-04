@@ -38,11 +38,12 @@ export const FALLBACK_SUGGESTIONS = [
 
 /**
  * @param {string} message the (already-trimmed, validated) shopper message
+ * @param {object|null} [user] the optional authenticated shopper
  * @returns {Promise<{success: boolean, message: string, data: object, degraded: true}>}
  */
-export async function runFallback(message) {
+export async function runFallback(message, user = null) {
   const res = makeJsonResponse();
-  await queryAssistant({ body: { query: message } }, res);
+  await queryAssistant({ body: { query: message }, user }, res);
 
   if (res.statusCode >= 400 || !res.body || !res.body.success) {
     return {
@@ -61,6 +62,9 @@ export async function runFallback(message) {
       products: Array.isArray(body.products) ? body.products : [],
       recipe: body.recipe ?? null,
       basket: body.basket ?? null,
+      cart: body.cart ?? null,
+      orders: Array.isArray(body.orders) ? body.orders : [],
+      authRequired: Boolean(body.authRequired),
       clarifyingQuestion: body.clarifyingQuestion ?? null,
       suggested: Array.isArray(body.suggestions) ? body.suggestions : FALLBACK_SUGGESTIONS,
     },

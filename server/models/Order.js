@@ -1,6 +1,16 @@
 import mongoose from "mongoose";
 import mongooseAutopopulate from "mongoose-autopopulate";
 
+// Single source of truth for valid order statuses (also used by the schema
+// enum below and validated explicitly in the update-status controllers).
+export const ORDER_STATUSES = [
+  "pending",
+  "paid",
+  "shipped",
+  "delivered",
+  "cancelled",
+];
+
 const orderSchema = new mongoose.Schema(
   {
     user: {
@@ -21,6 +31,7 @@ const orderSchema = new mongoose.Schema(
         price: { type: Number, required: true },     // snapshot of product price
         image: { type: String },                     // snapshot of product image
         sku: { type: String },                       // merchant product code at time of order
+        category: { type: String },                  // snapshot of product category
         quantity: { type: Number, required: true, min: 1 },
       },
     ],
@@ -30,7 +41,7 @@ const orderSchema = new mongoose.Schema(
     },
     status: {
       type: String,
-      enum: ["pending", "paid", "shipped", "delivered", "cancelled"],
+      enum: ORDER_STATUSES,
       default: "pending",
     },
     customer_email: {
@@ -74,6 +85,7 @@ orderSchema.statics.createFromCart = async function (cart, user, email, shipping
     price: item.product.price,
     image: item.product.image,
     sku: item.product.sku,
+    category: item.product.category ?? null,
     quantity: item.quantity,
   }));
 

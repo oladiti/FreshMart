@@ -9,6 +9,7 @@ import {
   Truck,
 } from "lucide-react";
 import { CartContext } from "../context/CartContext";
+import { useNotifications } from "../context/NotificationContext";
 import CartItem from "../components/CartItem";
 
 export default function CartPage() {
@@ -20,6 +21,7 @@ export default function CartPage() {
     totalItems,
     totalAmount,
   } = useContext(CartContext);
+  const { notify } = useNotifications();
 
   const isEmpty = !cart || cart.length === 0;
   const itemLabel = `${totalItems} item${totalItems === 1 ? "" : "s"}`;
@@ -30,6 +32,7 @@ export default function CartPage() {
       window.confirm("Remove all items from your cart?")
     ) {
       clearCart();
+      notify("Cart cleared.");
     }
   };
 

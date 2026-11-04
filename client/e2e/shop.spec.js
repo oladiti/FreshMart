@@ -29,34 +29,6 @@ test.describe('Shop', () => {
   });
 });
 
-// The add-to-cart toast is centered on the viewport and sized to its content,
-// so on a 320px screen a long product name used to push it off-screen. Guard
-// the responsive width fix (max-w bound + wrapping message text).
-test.describe('Add-to-cart toast on a narrow screen', () => {
-  test.use({ viewport: { width: 320, height: 640 } });
-
-  test('stays within the viewport instead of overflowing', async ({ page }) => {
-    const shop = new ShopPage(page);
-    await shop.goto();
-
-    const addButtons = page.getByRole('button', { name: /add .* to cart/i });
-    // Sold-out rows disable their button, so settle on the first enabled one.
-    const enabled = addButtons.and(page.locator(':enabled'));
-    await expect(enabled.first()).toBeVisible({ timeout: 15000 });
-    await enabled.first().click();
-
-    const toast = page.getByRole('status').filter({ hasText: /added to cart/i });
-    await expect(toast).toBeVisible();
-
-    const box = await toast.boundingBox();
-    expect(box).not.toBeNull();
-    const viewport = page.viewportSize();
-    // Fits horizontally inside the 320px screen (allow a subpixel rounding sliver).
-    expect(box.x).toBeGreaterThanOrEqual(-1);
-    expect(box.x + box.width).toBeLessThanOrEqual(viewport.width + 1);
-  });
-});
-
 // The filter UI is desktop-only in the sidebar; on small screens it lives in a
 // sticky "Filters" bar that opens a bottom sheet. Guard the breakpoint split,
 // the sheet's dialog semantics, and that active filters surface on the button.

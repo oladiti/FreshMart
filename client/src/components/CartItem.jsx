@@ -3,6 +3,7 @@ import React from "react";
 import { Link } from "react-router-dom";
 import { motion } from "framer-motion";
 import { Minus, Plus, Trash2 } from "lucide-react";
+import SafeImage from "./SafeImage";
 
 const CartItem = React.memo(function CartItem({
   item,
@@ -35,21 +36,17 @@ const CartItem = React.memo(function CartItem({
             to={productPath}
             className="shrink-0 overflow-hidden rounded-xl"
           >
-            <img
+            <SafeImage
               src={image}
               alt={name}
-              loading="lazy"
-              onError={(e) => (e.target.src = "/images/placeholder.jpg")}
               className="h-20 w-20 object-cover transition-transform duration-300 hover:scale-105 sm:h-28 sm:w-28"
             />
           </Link>
         ) : (
           <div className="shrink-0 overflow-hidden rounded-xl">
-            <img
+            <SafeImage
               src={image}
               alt={name}
-              loading="lazy"
-              onError={(e) => (e.target.src = "/images/placeholder.jpg")}
               className="h-20 w-20 object-cover sm:h-28 sm:w-28"
             />
           </div>
@@ -76,7 +73,11 @@ const CartItem = React.memo(function CartItem({
             </div>
             <button
               type="button"
-              onClick={() => removeFromCart(id)}
+              onClick={() => {
+                if (window.confirm(`Remove ${name} from your cart?`)) {
+                  removeFromCart(id, name);
+                }
+              }}
               className="shrink-0 rounded-lg p-1.5 text-gray-400 transition-colors hover:bg-danger-soft hover:text-danger"
               aria-label={`Remove ${name} from cart`}
             >

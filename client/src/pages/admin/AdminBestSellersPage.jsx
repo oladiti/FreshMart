@@ -8,6 +8,7 @@ import {
 } from "lucide-react";
 import api from "../../utils/api";
 import { SkeletonRow } from "../../components/AdminSkeletons";
+import SafeImage from "../../components/SafeImage";
 
 const currency = (n) =>
   `£${Number(n || 0).toLocaleString(undefined, {
@@ -121,10 +122,9 @@ export default function AdminBestSellersPage() {
                       {rank === 1 ? <Crown className="w-5 h-5" /> : rank}
                     </span>
 
-                    <img
-                      src={seller.image || "/images/placeholder.jpg"}
+                    <SafeImage
+                      src={seller.image}
                       alt={seller.name}
-                      onError={(e) => (e.target.src = "/images/placeholder.jpg")}
                       className="h-14 w-14 rounded-lg object-cover shrink-0"
                     />
 

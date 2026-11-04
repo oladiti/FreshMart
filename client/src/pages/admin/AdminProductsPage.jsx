@@ -10,6 +10,7 @@ import {
 import api from "../../utils/api";
 import AdminTable from "../../components/AdminTable";
 import { TableSkeleton } from "../../components/AdminSkeletons";
+import SafeImage from "../../components/SafeImage";
 import Pagination from "../../components/Pagination";
 
 const ITEMS_PER_PAGE_OPTIONS = [10, 25, 50];
@@ -210,9 +211,8 @@ export default function AdminProductsPage() {
       header: "Product",
       render: (p) => (
         <div className="flex items-center gap-3">
-          <img
-            src={p.image || "/images/placeholder.jpg"}
-            onError={(e) => (e.target.src = "/images/placeholder.jpg")}
+          <SafeImage
+            src={p.image}
             alt={p.name}
             className="w-10 h-10 object-cover rounded shrink-0"
           />
@@ -334,7 +334,12 @@ export default function AdminProductsPage() {
       <div className="flex flex-wrap items-center gap-3 mb-5">
         <div className="relative flex-1 min-w-52 max-w-md">
           <Search className="w-4 h-4 text-gray-400 absolute left-3 top-1/2 -translate-y-1/2" />
+          <label htmlFor="product-search" className="sr-only">
+            Search products
+          </label>
           <input
+            id="product-search"
+            name="search"
             type="text"
             value={searchInput}
             onChange={(e) => setSearchInput(e.target.value)}
@@ -342,9 +347,11 @@ export default function AdminProductsPage() {
             className="w-full pl-9 pr-3 py-2 rounded-lg border border-gray-300 text-sm focus:outline-none focus:ring-2 focus:ring-primary-400"
           />
         </div>
-        <label className="flex items-center gap-2 text-sm text-gray-600">
+        <label htmlFor="items-per-page" className="flex items-center gap-2 text-sm text-gray-600">
           Show
           <select
+            id="items-per-page"
+            name="itemsPerPage"
             value={itemsPerPage}
             onChange={handleItemsPerPage}
             className="border border-gray-300 rounded-lg px-2 py-2 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-primary-400"
@@ -408,10 +415,14 @@ export default function AdminProductsPage() {
             <form onSubmit={handleSubmit} className="px-6 py-5 space-y-4">
               <div className="grid sm:grid-cols-2 gap-4">
                 <div className="sm:col-span-2">
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                  <label
+                    htmlFor="name"
+                    className="block text-sm font-medium text-gray-700 mb-1"
+                  >
                     Name *
                   </label>
                   <input
+                    id="name"
                     name="name"
                     required
                     value={form.name}
@@ -420,10 +431,14 @@ export default function AdminProductsPage() {
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                  <label
+                    htmlFor="price"
+                    className="block text-sm font-medium text-gray-700 mb-1"
+                  >
                     Price (£) *
                   </label>
                   <input
+                    id="price"
                     name="price"
                     type="number"
                     step="0.01"
@@ -435,10 +450,14 @@ export default function AdminProductsPage() {
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                  <label
+                    htmlFor="countInStock"
+                    className="block text-sm font-medium text-gray-700 mb-1"
+                  >
                     Stock *
                   </label>
                   <input
+                    id="countInStock"
                     name="countInStock"
                     type="number"
                     min="0"
@@ -449,10 +468,14 @@ export default function AdminProductsPage() {
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                  <label
+                    htmlFor="category"
+                    className="block text-sm font-medium text-gray-700 mb-1"
+                  >
                     Category
                   </label>
                   <input
+                    id="category"
                     name="category"
                     value={form.category}
                     onChange={handleChange}
@@ -461,10 +484,14 @@ export default function AdminProductsPage() {
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                  <label
+                    htmlFor="brand"
+                    className="block text-sm font-medium text-gray-700 mb-1"
+                  >
                     Brand
                   </label>
                   <input
+                    id="brand"
                     name="brand"
                     value={form.brand}
                     onChange={handleChange}
@@ -472,10 +499,14 @@ export default function AdminProductsPage() {
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                  <label
+                    htmlFor="sku"
+                    className="block text-sm font-medium text-gray-700 mb-1"
+                  >
                     SKU (Product Code)
                   </label>
                   <input
+                    id="sku"
                     name="sku"
                     value={form.sku}
                     onChange={handleChange}
@@ -484,10 +515,14 @@ export default function AdminProductsPage() {
                   />
                 </div>
                 <div className="sm:col-span-2">
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                  <label
+                    htmlFor="image"
+                    className="block text-sm font-medium text-gray-700 mb-1"
+                  >
                     Image URL
                   </label>
                   <input
+                    id="image"
                     name="image"
                     value={form.image}
                     onChange={handleChange}
@@ -496,10 +531,14 @@ export default function AdminProductsPage() {
                   />
                 </div>
                 <div className="sm:col-span-2">
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                  <label
+                    htmlFor="description"
+                    className="block text-sm font-medium text-gray-700 mb-1"
+                  >
                     Description
                   </label>
                   <textarea
+                    id="description"
                     name="description"
                     rows={3}
                     value={form.description}
@@ -510,8 +549,12 @@ export default function AdminProductsPage() {
               </div>
 
               <div className="flex flex-wrap gap-4">
-                <label className="flex items-center gap-2 text-sm text-gray-700">
+                <label
+                  htmlFor="isFeatured"
+                  className="flex items-center gap-2 text-sm text-gray-700"
+                >
                   <input
+                    id="isFeatured"
                     type="checkbox"
                     name="isFeatured"
                     checked={form.isFeatured}
@@ -520,8 +563,12 @@ export default function AdminProductsPage() {
                   />
                   Featured
                 </label>
-                <label className="flex items-center gap-2 text-sm text-gray-700">
+                <label
+                  htmlFor="isWeeklyDeal"
+                  className="flex items-center gap-2 text-sm text-gray-700"
+                >
                   <input
+                    id="isWeeklyDeal"
                     type="checkbox"
                     name="isWeeklyDeal"
                     checked={form.isWeeklyDeal}
@@ -530,8 +577,12 @@ export default function AdminProductsPage() {
                   />
                   Weekly deal
                 </label>
-                <label className="flex items-center gap-2 text-sm text-gray-700">
+                <label
+                  htmlFor="isNewArrival"
+                  className="flex items-center gap-2 text-sm text-gray-700"
+                >
                   <input
+                    id="isNewArrival"
                     type="checkbox"
                     name="isNewArrival"
                     checked={form.isNewArrival}

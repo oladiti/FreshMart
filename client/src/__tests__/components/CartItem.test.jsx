@@ -1,4 +1,4 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { render, screen, fireEvent } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
 import CartItem from '../../components/CartItem';
@@ -24,6 +24,11 @@ describe('CartItem', () => {
   beforeEach(() => {
     handlers.updateQuantity.mockClear();
     handlers.removeFromCart.mockClear();
+    vi.spyOn(window, 'confirm').mockReturnValue(true);
+  });
+
+  afterEach(() => {
+    vi.restoreAllMocks();
   });
 
   it('renders the item name, price, and quantity', () => {
@@ -55,10 +60,18 @@ describe('CartItem', () => {
     expect(screen.getByRole('button', { name: /decrease quantity/i })).toBeDisabled();
   });
 
-  it('removes the item via the remove button', () => {
+  it('removes the item via the remove button after confirmation', () => {
     renderCartItem({ item, ...handlers });
     fireEvent.click(screen.getByRole('button', { name: /remove .* from cart/i }));
-    expect(handlers.removeFromCart).toHaveBeenCalledWith('p1');
+    expect(window.confirm).toHaveBeenCalled();
+    expect(handlers.removeFromCart).toHaveBeenCalledWith('p1', 'Whole Milk');
+  });
+
+  it('keeps the item when the confirmation is cancelled', () => {
+    window.confirm.mockReturnValue(false);
+    renderCartItem({ item, ...handlers });
+    fireEvent.click(screen.getByRole('button', { name: /remove .* from cart/i }));
+    expect(handlers.removeFromCart).not.toHaveBeenCalled();
   });
 
   it('supports a product using _id instead of id', () => {

@@ -1,5 +1,5 @@
 import { useCallback, useContext, useEffect, useState } from "react";
-import { motion, AnimatePresence } from "framer-motion";
+import { motion } from "framer-motion";
 import { Link } from "react-router-dom";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import api from "../utils/api";
@@ -7,6 +7,7 @@ import { CartContext } from "../context/CartContext";
 import AddToCartButton from "./AddToCartButton";
 import Section from "./Section";
 import SectionHeading from "./SectionHeading";
+import SafeImage from "./SafeImage";
 import { containerVariants, fadeUp } from "../utils/animations";
 
 /**
@@ -162,69 +163,60 @@ export default function RecommendedProducts({ seedProductId }) {
         )}
 
         <div className="overflow-hidden">
-          <AnimatePresence mode="wait">
-            <motion.div
-              key={currentIndex}
-              variants={containerVariants}
-              initial="hidden"
-              animate="visible"
-              exit={{ opacity: 0, x: -20 }}
-              transition={{ duration: 0.3, ease: "easeInOut" }}
-              className="grid grid-cols-1 gap-6 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4"
-            >
-              {items
-                .slice(currentIndex, currentIndex + itemsToShow)
-                .map((entry) => (
-                  <motion.div
-                    key={entry.product._id}
-                    variants={fadeUp}
-                    whileHover={{ y: -5 }}
-                    transition={{ type: "spring", stiffness: 200, damping: 15 }}
-                    className="product-card group"
+          <motion.div
+            variants={containerVariants}
+            initial="hidden"
+            animate="visible"
+            className="grid grid-cols-1 gap-6 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4"
+          >
+            {items
+              .slice(currentIndex, currentIndex + itemsToShow)
+              .map((entry) => (
+                <motion.div
+                  key={entry.product._id}
+                  variants={fadeUp}
+                  whileHover={{ y: -5 }}
+                  transition={{ type: "spring", stiffness: 200, damping: 15 }}
+                  className="product-card group"
+                >
+                  <Link
+                    to={`/products/${entry.product.slug}`}
+                    className="flex-1"
                   >
-                    <Link
-                      to={`/products/${entry.product.slug}`}
-                      className="flex-1"
-                    >
-                      <div className="relative overflow-hidden">
-                        <img
-                          src={entry.product.image || "/images/placeholder.jpg"}
-                          alt={entry.product.name}
-                          loading="lazy"
-                          onError={(e) =>
-                            (e.target.src = "/images/placeholder.jpg")
-                          }
-                          className="h-56 w-full object-cover transition-transform duration-300 group-hover:scale-105"
-                        />
-                        {Number(entry.product.countInStock) === 0 && (
-                          <div className="absolute inset-0 flex items-center justify-center bg-black/55 backdrop-blur-[1px]">
-                            <span className="rounded-full bg-white/90 px-3 py-1 text-sm font-semibold text-gray-800">
-                              Sold out
-                            </span>
-                          </div>
-                        )}
-                      </div>
-                      <div className="p-5">
-                        <h3 className="line-clamp-2 text-sm font-semibold leading-snug text-gray-900 transition-colors group-hover:text-primary-700">
-                          {entry.product.name}
-                        </h3>
-                        <p className="mt-1.5 text-lg font-bold text-leaf">
-                          £{Number(entry.product.price).toFixed(2)}
-                        </p>
-                        {entry.reason && (
-                          <p className="mt-1 text-xs text-gray-400">
-                            {entry.reason}
-                          </p>
-                        )}
-                      </div>
-                    </Link>
-                    <div className="px-5 pb-5">
-                      <AddToCartButton product={entry.product} />
+                    <div className="relative overflow-hidden">
+                      <SafeImage
+                        src={entry.product.image}
+                        alt={entry.product.name}
+                        className="h-56 w-full object-cover transition-transform duration-300 group-hover:scale-105"
+                      />
+                      {Number(entry.product.countInStock) === 0 && (
+                        <div className="absolute inset-0 flex items-center justify-center bg-black/55 backdrop-blur-[1px]">
+                          <span className="rounded-full bg-white/90 px-3 py-1 text-sm font-semibold text-gray-800">
+                            Sold out
+                          </span>
+                        </div>
+                      )}
                     </div>
-                  </motion.div>
-                ))}
-            </motion.div>
-          </AnimatePresence>
+                    <div className="p-5">
+                      <h3 className="line-clamp-2 text-sm font-semibold leading-snug text-gray-900 transition-colors group-hover:text-primary-700">
+                        {entry.product.name}
+                      </h3>
+                      <p className="mt-1.5 text-lg font-bold text-leaf">
+                        £{Number(entry.product.price).toFixed(2)}
+                      </p>
+                      {entry.reason && (
+                        <p className="mt-1 text-xs text-gray-400">
+                          {entry.reason}
+                        </p>
+                      )}
+                    </div>
+                  </Link>
+                  <div className="px-5 pb-5">
+                    <AddToCartButton product={entry.product} />
+                  </div>
+                </motion.div>
+              ))}
+          </motion.div>
         </div>
 
         {items.length > itemsToShow && (

@@ -1,5 +1,6 @@
-import Order from '../models/Order.js';
+import Order, { ORDER_STATUSES } from '../models/Order.js';
 import Product from '../models/Product.js';
+import { coerceQuantity, MAX_ITEM_QUANTITY } from '../utils/orderItems.js';
 
 // 📌 Create new order
 export const createOrder = async (req, res, next) => {
@@ -15,42 +16,33 @@ export const createOrder = async (req, res, next) => {
       return res.status(400).json({ message: 'Shipping address is required' });
     }
 
-    // Build order item snapshots and validate products exist
-    const orderItems = [];
+    // Aggregate quantities per product so duplicate lines can't be used to
+    // bypass the stock check, then validate each product and its stock.
+    const lineItems = new Map(); // productId -> { product, quantity }
     const missingItems = [];
-    let totalAmount = 0;
 
     for (const item of items) {
-      const product = await Product.findById(item.productId || item.id);
+      const productId = item.productId || item.id;
+      const product = await Product.findById(productId);
       if (!product) {
         missingItems.push({
-          id: item.productId || item.id,
+          id: productId,
           name: item.name || 'Unavailable product',
         });
         continue;
       }
 
-      const quantity = Number(item.quantity) || 1;
-      const price = Number(product.price) || 0;
-
-      // Validate available stock before placing the order
-      const stock = Number(product.countInStock ?? product.stock);
-      if (typeof stock === 'number' && stock < quantity) {
+      const quantity = coerceQuantity(item.quantity);
+      if (quantity === null) {
         return res.status(400).json({
-          message: `Insufficient stock for "${product.name}". Only ${stock} available.`,
+          message: `Invalid quantity for "${product.name}". Use a whole number between 1 and ${MAX_ITEM_QUANTITY}.`,
         });
       }
 
-      totalAmount += price * quantity;
-
-      orderItems.push({
-        product: product._id,
-        name: product.name,
-        price,
-        image: product.image || '',
-        sku: product.sku,
-        quantity,
-      });
+      const key = String(product._id);
+      const existing = lineItems.get(key);
+      if (existing) existing.quantity += quantity;
+      else lineItems.set(key, { product, quantity });
     }
 
     if (missingItems.length > 0) {
@@ -60,6 +52,33 @@ export const createOrder = async (req, res, next) => {
           .join(', ')}`,
         code: 'MISSING_PRODUCTS',
         missingItems,
+      });
+    }
+
+    const orderItems = [];
+    let totalAmount = 0;
+
+    for (const { product, quantity } of lineItems.values()) {
+      // Validate available stock (across all lines for this product) before
+      // placing the order.
+      const stock = Number(product.countInStock ?? product.stock);
+      if (typeof stock === 'number' && stock < quantity) {
+        return res.status(400).json({
+          message: `Insufficient stock for "${product.name}". Only ${stock} available.`,
+        });
+      }
+
+      const price = Number(product.price) || 0;
+      totalAmount += price * quantity;
+
+      orderItems.push({
+        product: product._id,
+        name: product.name,
+        price,
+        image: product.image || '',
+        sku: product.sku,
+        category: product.category ?? null,
+        quantity,
       });
     }
 
@@ -133,13 +152,14 @@ export const getOrderById = async (req, res, next) => {
       return res.status(404).json({ message: 'Order not found' });
     }
 
-    // Non-admins can only view their own orders
-    if (
-      req.user &&
-      req.user.role !== 'admin' &&
-      order.user &&
-      order.user._id.toString() !== req.user._id.toString()
-    ) {
+    // Only admins, or the shopper who placed the order, may read it. Guest
+    // orders (no user) stay private instead of being visible to any caller.
+    const isAdmin = req.user && req.user.role === 'admin';
+    const orderUserId = order.user && (order.user._id || order.user);
+    const isOwner =
+      req.user && orderUserId && String(orderUserId) === String(req.user._id);
+
+    if (!isAdmin && !isOwner) {
       return res.status(403).json({ message: 'Not authorized to view this order' });
     }
 
@@ -156,6 +176,12 @@ export const updateOrderStatus = async (req, res, next) => {
 
     if (!order) {
       return res.status(404).json({ message: 'Order not found' });
+    }
+
+    if (req.body.status !== undefined && !ORDER_STATUSES.includes(req.body.status)) {
+      return res.status(400).json({
+        message: `Invalid status. Allowed values: ${ORDER_STATUSES.join(', ')}`,
+      });
     }
 
     order.status = req.body.status || order.status;

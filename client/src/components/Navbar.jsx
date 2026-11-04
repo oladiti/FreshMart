@@ -2,6 +2,7 @@ import React, { useContext, useState, useEffect, useRef } from "react";
 import { Link, useNavigate, useLocation } from "react-router-dom";
 import { AuthContext } from "../context/AuthContext";
 import { CartContext } from "../context/CartContext";
+import { useNotifications } from "../context/NotificationContext";
 import {
   Search,
   X,
@@ -16,6 +17,9 @@ import {
   LayoutDashboard,
 } from "lucide-react";
 import Brand from "./Brand";
+import Avatar from "./Avatar";
+import { MiniCartBody } from "./MiniCart";
+import SafeImage from "./SafeImage";
 
 import api from "../utils/api";
 
@@ -39,6 +43,7 @@ const isRouteActive = (to, pathname) =>
 export default function Navbar() {
   const { user, logout } = useContext(AuthContext);
   const { cart } = useContext(CartContext);
+  const { notify } = useNotifications();
   const { pathname } = useLocation();
   const [mobileOpen, setMobileOpen] = useState(false);
   const [cartOpen, setCartOpen] = useState(false);
@@ -47,6 +52,14 @@ export default function Navbar() {
   const cartTotalQuantity = cart.reduce((sum, item) => sum + item.quantity, 0);
 
   const closeMobile = () => setMobileOpen(false);
+
+  const handleLogout = () => {
+    if (typeof window !== "undefined" && !window.confirm("Sign out of your account?")) {
+      return;
+    }
+    logout();
+    notify("Signed out.");
+  };
 
   useEffect(() => {
     const handleClickOutside = (e) => {
@@ -135,7 +148,12 @@ export default function Navbar() {
                   to="/profile"
                   className="flex h-10 items-center gap-2 rounded-full px-3 text-sm font-medium text-gray-700 transition-colors hover:bg-primary-50 hover:text-primary-700"
                 >
-                  <User className="h-5 w-5" />
+                  <Avatar
+                    name={user.name}
+                    email={user.email}
+                    size="sm"
+                    src={user.avatar}
+                  />
                   <span className="max-w-[8rem] truncate">
                     {user.name || "Profile"}
                   </span>
@@ -151,7 +169,7 @@ export default function Navbar() {
                 )}
                 <button
                   type="button"
-                  onClick={logout}
+                  onClick={handleLogout}
                   className="flex h-10 items-center gap-1.5 rounded-full bg-red-500/10 px-4 text-sm font-semibold text-red-600 transition-colors hover:bg-red-500 hover:text-white"
                 >
                   <LogOut className="h-4 w-4" />
@@ -236,7 +254,12 @@ export default function Navbar() {
                   className={mobileLinkClass}
                   onClick={closeMobile}
                 >
-                  <User className="h-5 w-5 text-primary-600" />
+                  <Avatar
+                    name={user.name}
+                    email={user.email}
+                    size="sm"
+                    src={user.avatar}
+                  />
                   Profile
                 </Link>
                 {user.role === "admin" && (
@@ -248,8 +271,8 @@ export default function Navbar() {
                 <button
                   type="button"
                   onClick={() => {
-                    logout();
                     closeMobile();
+                    handleLogout();
                   }}
                   className="flex items-center gap-3 bg-red-500 px-5 py-3 text-left font-semibold text-white transition-colors hover:bg-red-600"
                 >
@@ -357,12 +380,16 @@ function SearchBar({ className = "", onNavigate }) {
         className="flex items-center overflow-hidden rounded-full border border-gray-100 bg-white shadow-sm transition-shadow focus-within:ring-2 focus-within:ring-primary-300 focus-within:shadow-md"
       >
         <Search className="ml-3 h-5 w-5 shrink-0 text-gray-400" />
+        <label htmlFor="navbar-search" className="sr-only">
+          Search products
+        </label>
         <input
+          id="navbar-search"
+          name="search"
           type="text"
           placeholder="Search for fresh groceries..."
           value={search}
           onChange={(e) => setSearch(e.target.value)}
-          aria-label="Search products"
           className="flex-1 bg-transparent px-3 py-2 text-gray-700 outline-none placeholder:text-gray-400"
         />
         {search && (
@@ -406,10 +433,9 @@ function SearchResults({ isLoading, results, onSelect }) {
       onClick={() => onSelect(product)}
       className="flex w-full items-center gap-3 p-2 text-left hover:bg-primary-50"
     >
-      <img
+      <SafeImage
         src={product.image}
         alt={product.name}
-        onError={(e) => (e.target.src = "/images/placeholder.jpg")}
         className="h-10 w-10 rounded object-cover"
       />
       <span className="font-medium text-gray-700">{product.name}</span>
@@ -418,90 +444,9 @@ function SearchResults({ isLoading, results, onSelect }) {
 }
 
 function MiniCart({ onClose }) {
-  const { cart, removeFromCart } = useContext(CartContext);
-
-  const totalQuantity = cart.reduce((sum, item) => sum + item.quantity, 0);
-  const totalAmount = cart.reduce(
-    (sum, item) => sum + item.price * item.quantity,
-    0
-  );
-
   return (
     <div className="absolute right-0 z-50 mt-3 w-80 max-w-[calc(100vw-2rem)] rounded-2xl border border-gray-100 bg-white p-4 shadow-xl animate-fadeIn">
-      <div className="mb-3 flex items-center justify-between">
-        <h3 className="flex items-center gap-2 text-base font-semibold text-gray-800">
-          <ShoppingCart className="h-4 w-4 text-primary-600" />
-          Your Cart ({totalQuantity})
-        </h3>
-        <button
-          type="button"
-          onClick={onClose}
-          aria-label="Close cart"
-          className="text-gray-400 hover:text-gray-600"
-        >
-          <X className="h-4 w-4" />
-        </button>
-      </div>
-
-      {cart.length === 0 ? (
-        <p className="py-4 text-center text-gray-500">Your cart is empty</p>
-      ) : (
-        <>
-          <div className="max-h-64 space-y-3 overflow-y-auto">
-            {cart.map((item) => (
-              <div
-                key={item.id || item._id}
-                className="flex items-center justify-between border-b pb-2"
-              >
-                <div className="flex items-center gap-2">
-                  <img
-                    src={item.image}
-                    alt={item.name}
-                    onError={(e) => (e.target.src = "/images/placeholder.jpg")}
-                    className="h-12 w-12 rounded object-cover"
-                  />
-                  <div>
-                    <p className="font-medium text-gray-700">{item.name}</p>
-                    <p className="text-sm text-gray-500">
-                      £{item.price.toLocaleString()} × {item.quantity}
-                    </p>
-                  </div>
-                </div>
-                <button
-                  type="button"
-                  onClick={() => removeFromCart(item.id || item._id)}
-                  className="text-sm text-red-500 hover:underline"
-                >
-                  Remove
-                </button>
-              </div>
-            ))}
-          </div>
-
-          <div className="mt-3 border-t pt-3">
-            <div className="flex justify-between font-semibold text-gray-800">
-              <span>Total:</span>
-              <span>£{totalAmount.toLocaleString()}</span>
-            </div>
-            <div className="mt-3 flex gap-2">
-              <Link
-                to="/cart"
-                onClick={onClose}
-                className="flex-1 rounded-full bg-gray-100 py-2 text-center font-semibold text-gray-700 transition-colors hover:bg-gray-200"
-              >
-                View Cart
-              </Link>
-              <Link
-                to="/checkout"
-                onClick={onClose}
-                className="flex-1 rounded-full bg-gradient-to-r from-primary-600 to-primary-700 py-2 text-center font-semibold text-white transition-colors hover:from-primary-700 hover:to-primary-800"
-              >
-                Checkout
-              </Link>
-            </div>
-          </div>
-        </>
-      )}
+      <MiniCartBody onClose={onClose} />
     </div>
   );
 }

@@ -23,6 +23,7 @@ export default function AIInput({
       </label>
       <input
         id="ai-assistant-input"
+        name="message"
         type="text"
         value={value}
         onChange={(event) => onChange(event.target.value)}

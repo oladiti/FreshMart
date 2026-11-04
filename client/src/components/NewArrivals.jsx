@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback } from "react";
-import { motion, AnimatePresence } from "framer-motion";
+import { motion } from "framer-motion";
 import { Link } from "react-router-dom";
 import api from "../utils/api";
 import { ChevronLeft, ChevronRight } from "lucide-react";
@@ -7,6 +7,7 @@ import Button from "./Button";
 import AddToCartButton from "./AddToCartButton";
 import Section from "./Section";
 import SectionHeading from "./SectionHeading";
+import SafeImage from "./SafeImage";
 
 export default function NewArrivals() {
   const [products, setProducts] = useState([]);
@@ -119,26 +120,17 @@ export default function NewArrivals() {
         )}
 
         <div className="overflow-hidden">
-          <AnimatePresence mode="wait">
-            <motion.div
-              key={currentIndex}
-              initial={{ opacity: 0, x: 20 }}
-              animate={{ opacity: 1, x: 0 }}
-              exit={{ opacity: 0, x: -20 }}
-              transition={{ duration: 0.3, ease: "easeInOut" }}
-              className="grid grid-cols-1 gap-6 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4"
-            >
-              {products
-                .slice(currentIndex, currentIndex + itemsToShow)
-                .map((product, index) => (
-                  <ProductCard
-                    key={product._id}
-                    product={product}
-                    index={index}
-                  />
-                ))}
-            </motion.div>
-          </AnimatePresence>
+          <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4">
+            {products
+              .slice(currentIndex, currentIndex + itemsToShow)
+              .map((product, index) => (
+                <ProductCard
+                  key={product._id}
+                  product={product}
+                  index={index}
+                />
+              ))}
+          </div>
         </div>
 
         {products.length > itemsToShow && (
@@ -181,11 +173,9 @@ function ProductCard({ product, index }) {
     >
       <Link to={`/products/${product.slug}`} className="flex-1">
         <div className="relative overflow-hidden">
-          <img
+          <SafeImage
             src={product.image}
             alt={product.name}
-            loading="lazy"
-            onError={(e) => (e.target.src = "/images/placeholder.jpg")}
             className="h-56 w-full object-cover transition-transform duration-300 group-hover:scale-105"
           />
           {product.countInStock === 0 && (

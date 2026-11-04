@@ -118,6 +118,64 @@ describe("parseQuery - intents", () => {
   });
 });
 
+describe("parseQuery - account intents", () => {
+  it("routes 'check my cart' to my_cart", () => {
+    const { intent } = parseQuery("check my cart");
+
+    expect(intent).toBe(INTENTS.MY_CART);
+  });
+
+  it("reads the common ways of asking to see a cart", () => {
+    const messages = [
+      "Check my cart",
+      "What is in my cart",
+      "Show me my cart",
+      "my cart summary",
+      "my cart total",
+    ];
+
+    for (const message of messages) {
+      expect(parseQuery(message).intent).toBe(INTENTS.MY_CART);
+    }
+  });
+
+  it("does not mistake a cart change for a cart view", () => {
+    // The degraded assistant cannot mutate the cart, so these must fall through
+    // to a normal product search rather than claiming to show the cart.
+    const messages = [
+      "add milk to my cart",
+      "remove rice from my cart",
+      "clear my cart",
+      "empty my cart",
+      "update my cart",
+    ];
+
+    for (const message of messages) {
+      expect(parseQuery(message).intent).not.toBe(INTENTS.MY_CART);
+    }
+  });
+
+  it("routes order phrasing to my_orders", () => {
+    const messages = [
+      "track my last order",
+      "my orders",
+      "order history",
+      "order status",
+      "where is my order",
+    ];
+
+    for (const message of messages) {
+      expect(parseQuery(message).intent).toBe(INTENTS.MY_ORDERS);
+    }
+  });
+
+  it("prefers the cart intent over an order intent when both words appear", () => {
+    const { intent } = parseQuery("what is in my cart and where is my order");
+
+    expect(intent).toBe(INTENTS.MY_CART);
+  });
+});
+
 describe("parseQuery - price slots", () => {
   it("reads a range as both bounds", () => {
     const { slots } = parseQuery("Rice between £5 and £15");

@@ -1,3 +1,5 @@
+// Seeded accounts are pre-verified so checkout/order tests exercise the happy
+// path; unverified behaviour is covered explicitly elsewhere.
 export const adminUser = {
   name: 'Test Admin',
   email: 'admin@test.com',

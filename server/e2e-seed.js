@@ -27,9 +27,9 @@ const E2E_USER = {
 };
 
 const E2E_PRODUCTS = [
-  { name: 'Organic Apples', description: 'Fresh organic apples, crisp and juicy.', price: 3.99, category: 'Fruits', countInStock: 50, image: '/images/apples.png' },
-  { name: 'Bananas', description: 'Sweet ripe bananas, perfect for smoothies.', price: 1.29, category: 'Fruits', countInStock: 80, image: '/images/banana.jpeg' },
-  { name: 'Whole Milk 1L', description: 'Fresh full cream milk.', price: 1.29, category: 'Dairy', countInStock: 60, image: '/images/milk.jpeg' },
+  { name: 'Organic Apples', description: 'Fresh organic apples, crisp and juicy.', price: 3.99, category: 'Fruits', countInStock: 50, image: '/images/Apples.png' },
+  { name: 'Bananas', description: 'Sweet ripe bananas, perfect for smoothies.', price: 1.29, category: 'Fruits', countInStock: 80, image: '/images/Banana.jpeg' },
+  { name: 'Whole Milk 1L', description: 'Fresh full cream milk.', price: 1.29, category: 'Dairy', countInStock: 60, image: '/images/Milk.jpeg' },
   { name: 'Cheddar Cheese 200g', description: 'Mature cheddar cheese block.', price: 3.99, category: 'Dairy', countInStock: 40, image: '/images/cheddar.jpeg' },
   { name: 'Tomatoes', description: 'Fresh juicy tomatoes.', price: 2.49, category: 'Vegetables', countInStock: 70, image: '/images/tomatoes.jpg' },
 ];

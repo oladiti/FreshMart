@@ -3,6 +3,8 @@
 import express from 'express';
 import cors from 'cors';
 import compression from 'compression';
+import cookieParser from 'cookie-parser';
+import helmet from 'helmet';
 import path from 'path';
 import fs from 'fs';
 
@@ -19,8 +21,87 @@ import recommendationRoutes from './routes/recommendationRoutes.js';
 import { stripeWebhookHandler } from './controllers/paymentStripeController.js';
 import { notFound, errorHandler } from './middleware/errorMiddleware.js';
 import recipeRoutes from "./routes/recipeRoutes.js";
+import { sanitizeRequest } from './middleware/sanitize.js';
+import { globalLimiter } from './middleware/rateLimit.js';
+import { csrfGuard } from './middleware/csrf.js';
 
 const app = express();
+
+// Behind Render's proxy, trust the first hop so req.ip (used by rate limiting)
+// reflects the real client rather than the load balancer.
+app.set('trust proxy', 1);
+
+// Security headers. CSP is tuned for the storefront (bundled assets, Stripe.js
+// and Google Fonts); COOP allows the Stripe popup flow to work.
+app.use(
+  helmet({
+    contentSecurityPolicy: {
+      directives: {
+        defaultSrc: ["'self'"],
+        baseUri: ["'self'"],
+        scriptSrc: ["'self'", 'https://js.stripe.com'],
+        scriptSrcAttr: ["'none'"],
+        styleSrc: ["'self'", 'https://fonts.googleapis.com'],
+        fontSrc: ["'self'", 'https://fonts.gstatic.com', 'data:'],
+        imgSrc: ["'self'", 'data:', 'https:'],
+        connectSrc: ["'self'", 'https://api.stripe.com'],
+        frameSrc: ['https://js.stripe.com', 'https://hooks.stripe.com'],
+        objectSrc: ["'none'"],
+        formAction: ["'self'"],
+        frameAncestors: ["'self'"],
+        upgradeInsecureRequests: [],
+      },
+    },
+    crossOriginOpenerPolicy: { policy: 'same-origin-allow-popups' },
+    crossOriginResourcePolicy: { policy: 'cross-origin' },
+    // Enforce HTTPS for a year, including subdomains, and allow preloading.
+    strictTransportSecurity: {
+      maxAge: 31536000,
+      includeSubDomains: true,
+      preload: true,
+    },
+  })
+);
+
+// ✅ Enable CORS BEFORE the HTTPS redirect and routes so every response --
+// including redirects and error responses -- carries the CORS headers the
+// browser requires. Allowed browser origins come from CORS_ORIGIN
+// (comma-separated) so deploys don't need a code change; local dev/preview
+// ports are the fallback.
+const corsOrigins = (process.env.CORS_ORIGIN || '')
+  .split(',')
+  .map((origin) => origin.trim())
+  .filter(Boolean);
+
+app.use(cors({
+  origin: corsOrigins.length
+    ? corsOrigins
+    : [
+        "http://localhost:5173",
+        "http://localhost:5174",
+        "http://127.0.0.1:5173",
+        "http://localhost:4173",
+        "http://127.0.0.1:4173",
+      ],
+  credentials: true, // allow cookies/auth headers
+}));
+
+// Redirect any plain-HTTP request to HTTPS in production. Render terminates TLS
+// at its proxy, so `req.secure` reflects the client hop once trust proxy is set.
+// Loopback hosts are never redirected: local `npm run dev` typically runs with
+// NODE_ENV=production but serves plain HTTP, and redirecting to https://localhost
+// would break the frontend (no TLS listener).
+const LOOPBACK_HOST = /^(localhost|127\.0\.0\.1|\[::1\])(:\d+)?$/i;
+if (process.env.NODE_ENV === 'production') {
+  app.use((req, res, next) => {
+    if (!req.headers.host || LOOPBACK_HOST.test(req.headers.host)) return next();
+    if (req.secure || req.headers['x-forwarded-proto'] === 'https') return next();
+    if (req.method === 'GET' || req.method === 'HEAD') {
+      return res.redirect(301, `https://${req.headers.host}${req.originalUrl}`);
+    }
+    return next();
+  });
+}
 
 // Locate the built frontend regardless of whether cwd is the repo root or /server
 const distCandidates = [
@@ -57,30 +138,30 @@ app.use(
   })
 );
 
-// ✅ Enable CORS BEFORE routes
-app.use(cors({
-  origin: [
-    "http://localhost:5173",
-    "http://localhost:5174",
-    "http://127.0.0.1:5173",
-    "http://localhost:4173",
-    "http://127.0.0.1:4173",
-  ],
-  credentials: true, // allow cookies/auth headers
-}));
-
 // Stripe webhook (raw body needed) - MUST be registered BEFORE express.json()
 // so the raw body stream is preserved for signature verification
 app.post(
   '/webhook/stripe',
   express.raw({ type: 'application/json' }),
-  async (req, res) => {
-    await stripeWebhookHandler(req, res);
+  async (req, res, next) => {
+    await stripeWebhookHandler(req, res, next);
   }
 );
 
 // ✅ Body parser must come after webhook but before routes
-app.use(express.json());
+app.use(express.json({ limit: '1mb' }));
+
+// Parse cookies so auth middleware can read the HttpOnly token cookies.
+app.use(cookieParser());
+
+// Strip Mongo operator / prototype-pollution keys from request body & query.
+app.use(sanitizeRequest);
+
+// Broad rate limit across the API surface.
+app.use('/api', globalLimiter);
+
+// Block cross-site state changes for requests that carry a session cookie.
+app.use('/api', csrfGuard);
 
 // Routes
 app.use("/api/recipes", recipeRoutes);

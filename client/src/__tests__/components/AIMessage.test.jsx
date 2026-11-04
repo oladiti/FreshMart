@@ -188,3 +188,78 @@ describe("AIMessage - shopping baskets", () => {
     expect(screen.getByText(/None of those items are available/)).toBeInTheDocument();
   });
 });
+
+describe("AIMessage - cart blocks", () => {
+  it("renders the cart summary with quantities, totals and a checkout link", () => {
+    renderMessage(
+      assistantMessage({
+        cart: {
+          items: [
+            { product: riceCard, quantity: 1, lineTotal: 12.99 },
+            { product: tomatoCard, quantity: 3, lineTotal: 2.7 },
+          ],
+          totalItems: 4,
+          total: 15.69,
+        },
+      })
+    );
+
+    expect(screen.getByText("Your cart")).toBeInTheDocument();
+    expect(screen.getByText(/Rice 5kg/)).toBeInTheDocument();
+    expect(screen.getByText(/× 3/)).toBeInTheDocument();
+    expect(screen.getByText("£12.99")).toBeInTheDocument();
+    expect(screen.getByText("£2.70")).toBeInTheDocument();
+    expect(screen.getByText("£15.69")).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: /Go to checkout/i })).toHaveAttribute(
+      "href",
+      "/cart"
+    );
+  });
+
+  it("says when the cart is empty", () => {
+    renderMessage(assistantMessage({ cart: { items: [], totalItems: 0, total: 0 } }));
+
+    expect(screen.getByText("Your cart is empty.")).toBeInTheDocument();
+  });
+
+  it("renders nothing when there is no cart", () => {
+    const { container } = renderMessage(assistantMessage({ cart: null }));
+
+    expect(container.textContent).not.toContain("Your cart");
+  });
+});
+
+describe("AIMessage - order blocks", () => {
+  it("lists orders with their reference, status and total", () => {
+    renderMessage(
+      assistantMessage({
+        orders: [
+          {
+            _id: "order-1",
+            reference: "ABCD1234",
+            status: "shipped",
+            total: 42.5,
+            createdAt: "2026-01-02T10:00:00.000Z",
+          },
+        ],
+      })
+    );
+
+    expect(screen.getByText("Orders")).toBeInTheDocument();
+    expect(screen.getByText("ABCD1234")).toBeInTheDocument();
+    expect(screen.getByText("shipped")).toBeInTheDocument();
+    expect(screen.getByText("£42.50")).toBeInTheDocument();
+  });
+
+  it("renders nothing when there are no orders", () => {
+    const { container } = renderMessage(assistantMessage({ orders: [] }));
+
+    expect(container.textContent).not.toContain("Orders");
+  });
+
+  it("prompts for sign-in when account data is requested anonymously", () => {
+    renderMessage(assistantMessage({ authRequired: true }));
+
+    expect(screen.getByText(/needs you to be signed in/i)).toBeInTheDocument();
+  });
+});

@@ -1,7 +1,12 @@
-import Order from '../models/Order.js';
-import Product from '../models/Product.js';
+import Order, { ORDER_STATUSES } from '../models/Order.js';
+import Product, { pickProductFields } from '../models/Product.js';
 import User from '../models/User.js';
 import Setting from '../models/Setting.js';
+import AuditLog from '../models/AuditLog.js';
+
+// Escape RegExp metacharacters in user-supplied search text.
+const escapeRegex = (value) =>
+  String(value).replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 
 export const SETTING_DEFAULTS = {
   storeName: 'FreshMart',
@@ -17,7 +22,7 @@ export const SETTING_DEFAULTS = {
   orderPrefix: 'FM',
 };
 
-export const getAllOrders = async (req, res) => {
+export const getAllOrders = async (req, res, next) => {
   try {
     const orders = await Order.find({})
       .populate('user', 'name email')
@@ -25,13 +30,15 @@ export const getAllOrders = async (req, res) => {
       .sort({ createdAt: -1 });
     res.json(orders);
   } catch (err) {
-    res.status(500).json({ message: err.message });
+    next(err);
   }
 };
 
-export const getAllProducts = async (req, res) => {
+export const getAllProducts = async (req, res, next) => {
   try {
-    const search = (req.query.search || '').trim();
+    // Escape and cap the search term before using it as a RegExp so a crafted
+    // value can't trigger catastrophic backtracking (ReDoS).
+    const search = escapeRegex(String(req.query.search || '').trim().slice(0, 64));
     const page = Math.max(1, parseInt(req.query.page) || 1);
     const limit = Math.min(
       100,
@@ -59,22 +66,22 @@ export const getAllProducts = async (req, res) => {
 
     res.json({ products, total, totalPages, currentPage: page, pageSize: limit });
   } catch (err) {
-    res.status(500).json({ message: err.message });
+    next(err);
   }
 };
 
-export const getAllCustomers = async (req, res) => {
+export const getAllCustomers = async (req, res, next) => {
   try {
     const customers = await User.find({ role: 'user' }).select(
       'name email role createdAt'
     );
     res.json(customers);
   } catch (err) {
-    res.status(500).json({ message: err.message });
+    next(err);
   }
 };
 
-export const getBestSellers = async (req, res) => {
+export const getBestSellers = async (req, res, next) => {
   try {
     // Rank products by cumulative units sold across all non-cancelled orders.
     // Items carry name/image snapshots, so results survive deleted products.
@@ -127,51 +134,56 @@ export const getBestSellers = async (req, res) => {
 
     res.json(bestSellers);
   } catch (err) {
-    res.status(500).json({ message: err.message });
+    next(err);
   }
 };
 
-export const updateOrderStatus = async (req, res) => {
+export const updateOrderStatus = async (req, res, next) => {
   try {
     const order = await Order.findById(req.params.id);
     if (!order) return res.status(404).json({ message: 'Order not found' });
+    if (req.body.status !== undefined && !ORDER_STATUSES.includes(req.body.status)) {
+      return res.status(400).json({
+        message: `Invalid status. Allowed values: ${ORDER_STATUSES.join(', ')}`,
+      });
+    }
     order.status = req.body.status || order.status;
     await order.save();
     res.json(order);
   } catch (err) {
-    res.status(500).json({ message: err.message });
+    next(err);
   }
 };
 
-export const createProductAdmin = async (req, res) => {
+export const createProductAdmin = async (req, res, next) => {
   try {
-    const p = await Product.create(req.body);
+    const p = await Product.create(pickProductFields(req.body));
     res.status(201).json(p);
   } catch (err) {
-    res.status(500).json({ message: err.message });
+    next(err);
   }
 };
 
-export const updateProductAdmin = async (req, res) => {
+export const updateProductAdmin = async (req, res, next) => {
   try {
     const p = await Product.findById(req.params.id);
     if (!p) return res.status(404).json({ message: 'Not found' });
-    Object.assign(p, req.body);
+    Object.assign(p, pickProductFields(req.body));
     await p.save();
     res.json(p);
   } catch (err) {
-    res.status(500).json({ message: err.message });
+    next(err);
   }
 };
 
-export const deleteProductAdmin = async (req, res) => {
+export const deleteProductAdmin = async (req, res, next) => {
   try {
     const p = await Product.findById(req.params.id);
     if (!p) return res.status(404).json({ message: 'Not found' });
     await p.deleteOne();
     res.json({ message: 'Deleted' });
   } catch (err) {
-    res.status(500).json({ message: err.message });
+    next(err);
   }
 };
 
@@ -183,7 +195,7 @@ const dayKey = (date) => {
   return `${y}-${m}-${day}`;
 };
 
-export const getAnalytics = async (req, res) => {
+export const getAnalytics = async (req, res, next) => {
   try {
     const days = Math.min(Math.max(Number(req.query.days) || 30, 1), 90);
     const now = new Date();
@@ -226,11 +238,12 @@ export const getAnalytics = async (req, res) => {
       );
     });
 
-    // Top categories by revenue (look up product category snapshot).
+    // Top categories by revenue. Prefer the category snapshot stored on the
+    // order item so deleted products keep their original category.
     const categoryTotals = {};
     activeOrders.forEach((o) => {
       o.items.forEach((it) => {
-        const category = it.product?.category || 'Unknown';
+        const category = it.category || it.product?.category || 'Uncategorised';
         categoryTotals[category] = categoryTotals[category] || {
           revenue: 0,
           units: 0,
@@ -282,21 +295,21 @@ export const getAnalytics = async (req, res) => {
       statusCounts,
     });
   } catch (err) {
-    res.status(500).json({ message: err.message });
+    next(err);
   }
 };
 
-export const getSettings = async (req, res) => {
+export const getSettings = async (req, res, next) => {
   try {
     const settings = await Setting.find({});
     const current = Object.fromEntries(settings.map((s) => [s.key, s.value]));
     res.json({ ...SETTING_DEFAULTS, ...current });
   } catch (err) {
-    res.status(500).json({ message: err.message });
+    next(err);
   }
 };
 
-export const updateSettings = async (req, res) => {
+export const updateSettings = async (req, res, next) => {
   try {
     const updates = req.body && typeof req.body === 'object' ? req.body : {};
     const allowList = Object.keys(SETTING_DEFAULTS);
@@ -325,6 +338,48 @@ export const updateSettings = async (req, res) => {
     const current = Object.fromEntries(settings.map((s) => [s.key, s.value]));
     res.json({ ...SETTING_DEFAULTS, ...current });
   } catch (err) {
-    res.status(500).json({ message: err.message });
+    next(err);
+  }
+};
+
+// Read-only audit trail viewer. Supports pagination plus optional filters on
+// action, actor id and a free-text target. Admin-only (router-level guard).
+export const getAuditLogs = async (req, res, next) => {
+  try {
+    const page = Math.max(1, parseInt(req.query.page, 10) || 1);
+    const limit = Math.min(100, Math.max(1, parseInt(req.query.limit, 10) || 25));
+
+    const filter = {};
+    if (typeof req.query.action === 'string' && req.query.action.trim()) {
+      filter.action = req.query.action.trim().slice(0, 100);
+    }
+    if (typeof req.query.actor === 'string' && /^[a-f0-9]{24}$/i.test(req.query.actor)) {
+      filter.actor = req.query.actor;
+    }
+    if (typeof req.query.target === 'string' && req.query.target.trim()) {
+      filter.target = new RegExp(escapeRegex(req.query.target.trim().slice(0, 64)), 'i');
+    }
+    if (req.query.success === 'true' || req.query.success === 'false') {
+      filter.success = req.query.success === 'true';
+    }
+
+    const [logs, total] = await Promise.all([
+      AuditLog.find(filter)
+        .populate('actor', 'name email')
+        .sort({ createdAt: -1 })
+        .skip((page - 1) * limit)
+        .limit(limit),
+      AuditLog.countDocuments(filter),
+    ]);
+
+    res.json({
+      logs,
+      page,
+      limit,
+      total,
+      pages: Math.max(1, Math.ceil(total / limit)),
+    });
+  } catch (err) {
+    next(err);
   }
 };

@@ -11,6 +11,7 @@ import {
   sampleProducts,
 } from './apiSetup.js';
 import Product from '../../models/Product.js';
+import Order from '../../models/Order.js';
 
 describe('Admin API', () => {
   beforeAll(async () => {
@@ -140,6 +141,57 @@ describe('Admin API', () => {
       expect(Array.isArray(res.body.statusCounts)).toBe(true);
     });
 
+    it('uses the item category snapshot when the product is deleted', async () => {
+      const token = await adminAuth();
+      const user = await getUserDoc();
+      const product = await Product.create({
+        name: 'Ghost Snack',
+        price: 5,
+        image: '/images/ghost.jpg',
+        category: 'Snacks',
+        countInStock: 10,
+      });
+      await Order.create({
+        user: user._id,
+        items: [
+          {
+            product: product._id,
+            name: product.name,
+            price: product.price,
+            image: product.image,
+            category: product.category,
+            quantity: 3,
+          },
+        ],
+        total_amount: 15,
+        status: 'paid',
+        customer_email: 'ghost@test.com',
+        shipping_address: {
+          street: '1 Test St',
+          city: 'London',
+          state: 'England',
+          postalCode: 'SW1A 1AA',
+          country: 'UK',
+        },
+      });
+      await Product.deleteOne({ _id: product._id });
+
+      const res = await agent()
+        .get('/api/admin/analytics?days=30')
+        .set('Authorization', `Bearer ${token}`);
+
+      expect(res.status).toBe(200);
+      const snacks = res.body.topCategories.find(
+        (c) => c.category === 'Snacks'
+      );
+      expect(snacks).toBeDefined();
+      expect(snacks.units).toBe(3);
+      expect(snacks.revenue).toBe(15);
+      expect(res.body.topCategories.some((c) => c.category === 'Unknown')).toBe(
+        false
+      );
+    });
+
     it('clamps the days query parameter to a supported range', async () => {
       const token = await adminAuth();
       const res = await agent()
@@ -189,6 +241,51 @@ describe('Admin API', () => {
         .set('Authorization', `Bearer ${token}`)
         .send({ lowStockThreshold: 'lots' });
       expect(res.status).toBe(400);
+    });
+  });
+
+  describe('product write field allow-list (mass assignment)', () => {
+    it('ignores server-managed fields on create', async () => {
+      const token = await adminAuth();
+      const res = await agent()
+        .post('/api/admin/products')
+        .set('Authorization', `Bearer ${token}`)
+        .send({
+          name: 'Allowlist Create',
+          price: 4.5,
+          image: '/images/x.jpg',
+          slug: 'forced-slug',
+          reviews: [{ rating: 5, comment: 'self-posted' }],
+        });
+      expect(res.status).toBe(201);
+      expect(res.body.name).toBe('Allowlist Create');
+      expect(res.body.slug).not.toBe('forced-slug');
+      expect((res.body.reviews || []).length).toBe(0);
+    });
+
+    it('ignores server-managed fields on update', async () => {
+      const token = await adminAuth();
+      const created = await Product.create({
+        name: 'Allowlist Update',
+        price: 5,
+        image: '/images/y.jpg',
+        category: 'Snacks',
+      });
+      const originalSlug = created.slug;
+
+      const res = await agent()
+        .put(`/api/admin/products/${created._id}`)
+        .set('Authorization', `Bearer ${token}`)
+        .send({
+          price: 6.5,
+          slug: 'hacked-slug',
+          reviews: [{ rating: 1, comment: 'self-posted' }],
+        });
+
+      expect(res.status).toBe(200);
+      expect(Number(res.body.price)).toBe(6.5);
+      expect(res.body.slug).toBe(originalSlug);
+      expect((res.body.reviews || []).length).toBe(0);
     });
   });
 

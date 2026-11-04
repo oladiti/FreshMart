@@ -50,6 +50,7 @@ describe('Orders API', () => {
       expect(res.body.items[0]).toMatchObject({
         name: product.name,
         sku: product.sku,
+        category: product.category,
         quantity: 2,
       });
     });
@@ -101,11 +102,96 @@ describe('Orders API', () => {
         .post('/api/orders')
         .set('Authorization', `Bearer ${token}`)
         .send({
-          items: [{ productId: product._id, quantity: 9999 }],
+          items: [{ productId: product._id, quantity: 60 }],
           shippingAddress: shipping,
         });
       expect(res.status).toBe(400);
       expect(res.body.message).toContain('Insufficient stock');
+    });
+
+    it('rejects a negative quantity', async () => {
+      const user = await getUserDoc();
+      const token = generateToken(user._id, user.role);
+      const products = await seedProducts();
+      const res = await agent()
+        .post('/api/orders')
+        .set('Authorization', `Bearer ${token}`)
+        .send({
+          items: [{ productId: products[0]._id, quantity: -3 }],
+          shippingAddress: shipping,
+        });
+      expect(res.status).toBe(400);
+      expect(res.body.message).toContain('Invalid quantity');
+    });
+
+    it('rejects a fractional quantity', async () => {
+      const user = await getUserDoc();
+      const token = generateToken(user._id, user.role);
+      const products = await seedProducts();
+      const res = await agent()
+        .post('/api/orders')
+        .set('Authorization', `Bearer ${token}`)
+        .send({
+          items: [{ productId: products[0]._id, quantity: 1.5 }],
+          shippingAddress: shipping,
+        });
+      expect(res.status).toBe(400);
+      expect(res.body.message).toContain('Invalid quantity');
+    });
+
+    it('rejects a quantity above the maximum', async () => {
+      const user = await getUserDoc();
+      const token = generateToken(user._id, user.role);
+      const products = await seedProducts();
+      const res = await agent()
+        .post('/api/orders')
+        .set('Authorization', `Bearer ${token}`)
+        .send({
+          items: [{ productId: products[0]._id, quantity: 1001 }],
+          shippingAddress: shipping,
+        });
+      expect(res.status).toBe(400);
+      expect(res.body.message).toContain('Invalid quantity');
+    });
+
+    it('rejects a split order that oversells through duplicate lines', async () => {
+      const user = await getUserDoc();
+      const token = generateToken(user._id, user.role);
+      const products = await seedProducts();
+      const bread = products.find((p) => p.name === 'Brown Bread'); // stock 20
+      const res = await agent()
+        .post('/api/orders')
+        .set('Authorization', `Bearer ${token}`)
+        .send({
+          items: [
+            { productId: bread._id, quantity: 15 },
+            { productId: bread._id, quantity: 15 },
+          ],
+          shippingAddress: shipping,
+        });
+      expect(res.status).toBe(400);
+      expect(res.body.message).toContain('Insufficient stock');
+    });
+
+    it('aggregates duplicate lines within stock into a single item', async () => {
+      const user = await getUserDoc();
+      const token = generateToken(user._id, user.role);
+      const products = await seedProducts();
+      const bread = products.find((p) => p.name === 'Brown Bread'); // stock 20
+      const res = await agent()
+        .post('/api/orders')
+        .set('Authorization', `Bearer ${token}`)
+        .send({
+          items: [
+            { productId: bread._id, quantity: 3 },
+            { productId: bread._id, quantity: 2 },
+          ],
+          shippingAddress: shipping,
+        });
+      expect(res.status).toBe(201);
+      expect(res.body.items).toHaveLength(1);
+      expect(res.body.items[0].quantity).toBe(5);
+      expect(res.body.total_amount).toBeCloseTo(bread.price * 5, 5);
     });
 
     it('returns 401 without a token', async () => {
@@ -192,6 +278,19 @@ describe('Orders API', () => {
         .set('Authorization', `Bearer ${token}`)
         .send({ status: 'shipped' });
       expect(res.status).toBe(403);
+    });
+
+    it('returns 400 for an invalid status value', async () => {
+      const user = await getUserDoc();
+      const order = await seedOrder(user._id);
+      const admin = await getAdminDoc();
+      const token = generateToken(admin._id, admin.role);
+      const res = await agent()
+        .put(`/api/orders/${order._id}`)
+        .set('Authorization', `Bearer ${token}`)
+        .send({ status: 'teleported' });
+      expect(res.status).toBe(400);
+      expect(res.body.message).toContain('Invalid status');
     });
   });
 });

@@ -17,6 +17,19 @@ services:
         value: "22"
       - key: NODE_ENV
         value: production
+      - key: ACCESS_TOKEN_TTL
+        value: 15m
+      - key: REFRESH_TOKEN_TTL
+        value: 7d
+      # Use __Host- cookie prefix on the HTTPS origin (single-origin deploy).
+      - key: COOKIE_HOST_PREFIX
+        value: "1"
+      # HaveIBeenPwned password screening and admin 2FA enforcement.
+      - key: BREACH_CHECK_ENABLED
+        value: "1"
+      - key: REQUIRE_ADMIN_2FA
+        value: "1"
+
       - key: VITE_API_URL
         value: /api
       # Set these in the Render dashboard after the first deploy:
@@ -24,14 +37,36 @@ services:
         sync: false
       - key: JWT_SECRET
         sync: false
+      # Public origin of the frontend (used in email links). Same-origin deploys
+      # can set this to the service URL, e.g. https://freshmart.onrender.com
+      - key: CLIENT_URL
+        sync: false
+      # Comma-separated extra browser origins allowed to call the API. Not needed
+      # for the same-origin storefront; set only if the frontend is hosted apart.
+      - key: CORS_ORIGIN
+        sync: false
       - key: STRIPE_SECRET_KEY
         sync: false
       - key: STRIPE_WEBHOOK_SECRET
         sync: false
-      - key: EMAIL_USER
+      # Transactional email via the Gmail API (HTTPS; avoids the free-tier SMTP
+      # port block, no verified domain needed). Set the GMAIL_* vars below in the
+      # dashboard after authorizing the account.
+      - key: EMAIL_PROVIDER
+        value: gmail_api
+      - key: GMAIL_SENDER
         sync: false
-      - key: EMAIL_PASS
+      - key: GMAIL_CLIENT_ID
         sync: false
+      - key: GMAIL_CLIENT_SECRET
+        sync: false
+      - key: GMAIL_REFRESH_TOKEN
+        sync: false
+      - key: EMAIL_FROM
+        sync: false
+      # Alternative: Resend (needs a verified sending domain).
+      # - key: RESEND_API_KEY
+      #   sync: false
       - key: AI_API_KEY
         sync: false
       - key: AI_MODEL
